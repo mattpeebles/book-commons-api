@@ -1,0 +1,11 @@
+language: node_js
+node_js: node
+services:
+- mongodb
+deploy:
+  provider: heroku
+  api_key:
+    secure: gykclgfMYLC4omTTkgYHz5LZO1psLuBNQFSYYjHd5AdEw/B454G1RHvE8qj//Pr13DG2/chZ3BO4GP7/uhnR6ngttdRswQ9clgcdye6NnasHjMZS8to05Xf2+8ORJNGmBKeWcZiqhz0dZv2qUDs7EHZWaE+u7PsANkdE7gs0Ilu3jdj6GS1S0MweonFZG3w2T2+ApdU+P51v0mH7QPttAC/duTJKP4AuL8hErqwGh8gST79856DzFthnv7TkXItWJocFpzH/T8Qo0+iQYi5ZJAjlt0OKe7xaO4s5Oh2xtTSfwmEpJxwQ4jwI+JHrS4molWX8RsFa8jhDRQs2uSxPmPVorXQa5TeyX91sBsMzVojc/mKQWEWJPGAwxP3tVkX9e0s/9Kel/BzufW02EKPBq5BftgS9736D4aOxJTP2QZuJo+BV6Awpzb3ZCrgGk535qrlLyE52O6zzRlol64I5RuIDl14d8dMnGcSoT2LgxaFw/vMBAud0wyKC/M4XYLnsqkNUjXtDGTTtX1Kg97AuO2bsvys6/KSLOgoeUqQL+uFY7/UyUlmCGAB3zD31p4fVi9YawmWZ5vqR4rA7IkYD3iBxd499YUgj8j2hiyKi7DChX3Il4EAJ2SeaHn61TnNgOHDcLT/UX5YVnnFL4T//ySbK9AWVGddOCdnfRlCSbTA=
+  app: quiet-cliffs-16571
+  on:
+    repo: mattpeebles/book-commons-api
