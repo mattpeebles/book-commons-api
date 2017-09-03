@@ -1,7 +1,14 @@
 const express = require('express')
 const app = express()
 const cors = require('cors');
-const {PORT, CLIENT_ORIGIN} = require('./config');
+const {PORT, DATABASE_URL, CLIENT_ORIGIN} = require('./config');
+
+const mongoose = require('mongoose')
+mongoose.Promise = global.Promise
+
+const userRouter = require('./userRouter')
+
+app.use('/users', userRouter)
 
 app.use(
     cors({
@@ -9,13 +16,49 @@ app.use(
     })
 );
 
+
+let server;
+
+function runServer(databaseURL = DATABASE_URL, port=PORT){
+	return new Promise((resolve, reject) => {
+		mongoose.connect(databaseURL, {useMongoClient: true}, err=> {
+			if(err){
+				return reject(err)
+			}
+
+			server = app.listen(port, () => {
+				console.log(`Book commons api is listening on port ${port}`)
+				resolve()
+			})
+			.on('error', (err) => {
+				mongoose.disconnect()
+				return reject(err)
+			})
+		})
+	})
+}
+
+function closeServer(){
+	return mongoose.disconnect().then(() => {
+		return new Promise((resolve, reject) => {
+			console.log('Closing Server')
+			server.close(err => {
+				if (err){
+					return reject(err)
+				}
+				resolve()
+			})
+		})
+	})
+}
+
 app.get('/api/*', (req, res) => {
 	res.json({ok: true})
 })
 
 
-app.listen(PORT, () => {
-	console.log(`Your app is listening on port ${PORT}`)
-})
+if (require.main === module) {
+	runServer().catch(err => console.error(err))
+}
 
-module.exports = {app}
+module.exports = {app, runServer, closeServer}
