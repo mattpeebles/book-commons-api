@@ -20,7 +20,7 @@ const {Ebooks} = require('../models')
 		console.info('creating test database of users')
 		const seedData = []
 
-		for (let i = 1; i <= 10; i++){
+		for (let i = 1; i <= 3; i++){
 			seedData.push(generateEbookData())
 		}
 

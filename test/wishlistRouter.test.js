@@ -20,7 +20,7 @@ const {Wishlists} = require('../models')
 		console.info('creating test database of users')
 		const seedData = []
 
-		for (let i = 1; i <= 10; i++){
+		for (let i = 1; i <= 3; i++){
 			seedData.push(generateWishlistData())
 		}
 
@@ -82,6 +82,25 @@ describe('Wishlist api resource', () => {
 					res = _res
 					res.should.have.status(200)
 					res.body.wishlists.should.have.length.of.at.least(1)
+				})
+		})
+	})
+
+	describe('Post endpoint', () => {
+		it('should post new wishlist to database', () => {
+			let wishlist = {
+				title: generateTitle()
+			}
+			
+			let res;
+			return chai.request(app)
+				.post('/wishlists')
+				.send(wishlist)
+				.then(_res => {
+					res = _res
+					res.should.have.status(201)
+					res.body.title.should.be.equal(wishlist.title)
+					res.body.items.should.deep.equal([])
 				})
 		})
 	})

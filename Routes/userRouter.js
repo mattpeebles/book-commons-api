@@ -8,7 +8,7 @@ mongoose.Promise = global.Promise
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
-const {Users} = require('./models')
+const {Users} = require('../models')
 
 userRouter.use(jsonParser)
 

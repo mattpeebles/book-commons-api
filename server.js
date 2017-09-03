@@ -6,8 +6,8 @@ const {PORT, DATABASE_URL, CLIENT_ORIGIN} = require('./config');
 const mongoose = require('mongoose')
 mongoose.Promise = global.Promise
 
-const userRouter = require('./userRouter')
-const wishlistRouter = require('./wishlistRouter')
+const userRouter = require('./Routes/userRouter')
+const wishlistRouter = require('./Routes/wishlistRouter')
 const ebookRouter = require('./Routes/ebookRouter')
 
 app.use('/users', userRouter)
