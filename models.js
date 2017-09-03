@@ -16,5 +16,20 @@ UserSchema.methods.userRepr = function(){
 	}
 }
 
+const WishlistSchema = mongoose.Schema({
+	title: {type: String, required: true},
+	items: {type: Array, "default": []} //an array of objects
+})
+
+WishlistSchema.methods.listRepr = function(){
+	return {
+		id: this._id,
+		title: this.title,
+		items: this.items
+	}
+}
+
 const Users = mongoose.model('users', UserSchema)
-module.exports = {Users}
+const Wishlists = mongoose.model('wishlists', WishlistSchema)
+
+module.exports = {Users, Wishlists}
