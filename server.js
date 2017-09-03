@@ -8,9 +8,11 @@ mongoose.Promise = global.Promise
 
 const userRouter = require('./userRouter')
 const wishlistRouter = require('./wishlistRouter')
+const ebookRouter = require('./Routes/ebookRouter')
 
 app.use('/users', userRouter)
 app.use('/wishlists', wishlistRouter)
+app.use('/ebooks', ebookRouter)
 
 app.use(
     cors({
