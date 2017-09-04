@@ -47,7 +47,7 @@ const {Ebooks} = require('../models')
 	}
 
 	function generateAuthor(){
-		return faker.name.firstName() + faker.name.lastName()
+		return faker.name.firstName()
 	}
 
 	function generatePreview(){
@@ -93,7 +93,7 @@ function tearDownDb(){
 }
 
 
-describe('Wishlist api resource', () => {
+describe('Ebook api resource', () => {
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
 	})
