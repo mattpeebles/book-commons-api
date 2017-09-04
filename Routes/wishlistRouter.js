@@ -49,4 +49,23 @@ wishlistRouter.post('/', (req, res) => {
 		})
 })
 
+wishlistRouter.put('/:id', (req, res) => {
+	
+	if (!(req.params.id === req.body.id)){
+		const message = (
+		  `Request path entryId (${req.params.entryId}) and request body entryId ` +
+		  `(${req.body.entryId}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});
+	}
+
+
+	let wishlist = req.params.id
+	let toUpdate = {}
+
+	const updateableFields = ['title']
+
+
+})
+
 module.exports = wishlistRouter

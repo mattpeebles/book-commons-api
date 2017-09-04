@@ -104,4 +104,28 @@ describe('Wishlist api resource', () => {
 				})
 		})
 	})
+
+
+	describe('Put endpoint', () => {
+		let updateList = {
+			title: 'The Life of Pablo'
+		}
+		return Wishlists
+			.findOne()
+			.exec()
+			.then(list => {
+				updateList.id = list.id
+				return chai.request(app)
+					.put(`/wishlists/${list.id}`)
+					.send(list)
+			})
+			.then(res => {
+				res.should.have.status(201)
+
+				return Wishlists.findById(updateList.id).exec()
+			})
+			.then(list => {
+				res.title.should.be.equal(updateList.title)
+			})
+	})
 })
