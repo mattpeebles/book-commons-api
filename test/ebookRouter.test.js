@@ -12,7 +12,7 @@ const faker = require('faker')
 
 const {TEST_DATABASE_URL} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Ebooks} = require('../models')
+const {Ebooks, Wishlists} = require('../models')
 
 // Test Database seed functions
 
@@ -167,7 +167,7 @@ describe('Ebook api resource', () => {
 	describe('Delete endpoint', () => {
 		it('should remove ebook from database', () => {
 			let bookId;
-			Ebooks
+			return Ebooks
 				.findOne()
 				.exec()
 				.then(book => {
@@ -180,6 +180,7 @@ describe('Ebook api resource', () => {
 					res.should.have.status(204)
 				})
 		})
+
 	})
 
 })

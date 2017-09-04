@@ -9,7 +9,7 @@ const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
 
-const {Wishlists} = require('../models')
+const {Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
@@ -124,6 +124,7 @@ wishlistRouter.delete('/:listId', (req, res) => {
 		})
 });
 
+	//remove book from wishlist
 wishlistRouter.delete('/:listId/:bookId', (req, res) => {
 	Wishlists
 		.findById(req.params.listId)
@@ -137,8 +138,23 @@ wishlistRouter.delete('/:listId/:bookId', (req, res) => {
 			Wishlists
 				.findByIdAndUpdate(req.params.listId, {$set: updatedItems}, {new: true})
 				.then(list => {
-					console.log(`Item ${req.params.bookId} was deleted`)
-					res.status(204).end()
+					
+					Wishlists
+						.find({items: {$in: [req.params.bookId]}})
+						.count()
+						.then(count => {
+							if(count == 0){
+								Ebooks
+									.findByIdAndRemove(req.params.bookId)
+									.then(() => {
+										console.log(`Ebook ${req.params.bookId} was removed from wishlist and deleted from database`)
+										res.status(204).end()
+									})
+							}
+
+							console.log(`Ebook ${req.params.bookId} was removed from wishlist`)
+							res.status(204).end()	
+					})
 				})
 		})
 })
