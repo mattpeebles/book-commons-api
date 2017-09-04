@@ -14,6 +14,11 @@ const {Wishlists} = require('../models')
 wishlistRouter.use(jsonParser)
 
 
+// TODO
+// add itemid to items array
+// update item wishlist location
+// remove item from wishlist
+
 wishlistRouter.get('/', (req, res) => {
 	Wishlists
 		.find()
@@ -29,28 +34,34 @@ wishlistRouter.get('/', (req, res) => {
 		})
 })
 
-wishlistRouter.post('/', (req, res) => {
-	
-	console.log(req.body.title)
 
-	let title = req.body.title
-
-	let wishlist = {
-		title: title,
-		items: []
-	}
-
+wishlistRouter.get('/:listId', (req, res) => {
 	Wishlists
-		.create(wishlist)
+		.findById(req.params.listId)
+		.exec()
+		.then(list => res.json(list.listRepr()))
+		.catch(err => {
+			console.error(err)
+			res.status(500).json({message: 'Internal server error'})
+		})
+});
+
+
+wishlistRouter.post('/', (req, res) => {
+	Wishlists
+		.create({
+			title: req.body.title,
+			items: []
+		})
 		.then(list => res.status(201).json(list.listRepr()))
 		.catch(err => {
 			console.error(err)
 			return res.status(500).json({message: 'Internal server error'})
 		})
-})
+});
 
-wishlistRouter.put('/:id', (req, res) => {
-	if (!(req.params.id === req.body.id)){
+wishlistRouter.put('/:listId', (req, res) => {
+	if (!(req.params.listId === req.body.id)){
 		const message = (
 		  `Request path entryId (${req.params.entryId}) and request body entryId ` +
 		  `(${req.body.entryId}) must match`);
@@ -58,8 +69,6 @@ wishlistRouter.put('/:id', (req, res) => {
 		res.status(400).json({message: message});
 	}
 
-
-	let wishlist = req.params.id
 	let toUpdate = {}
 
 	const updateableFields = ['title']
@@ -73,24 +82,17 @@ wishlistRouter.put('/:id', (req, res) => {
 	Wishlists
 		.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
 		.then(wishlist => res.status(201).json(wishlist.listRepr()))
-})
+});
 
 
 
-wishlistRouter.delete('/:id', (req, res) => {
-	let wishlist;
-
+wishlistRouter.delete('/:listId', (req, res) => {
 	Wishlists
-		.findById(req.params.id)
-		.then(list => {
-			wishlist = list
-		})
-
-	Wishlists
-		.findByIdAndRemove(req.params.id)
+		.findByIdAndRemove(req.params.listId)
 		.then(() => {
-			console.log(`${wishlist.title} Wishlist was removed`)
+			console.log(`${req.params.listId} Wishlist was removed`)
 			res.status(204).end()
 		})
-})
+});
+
 module.exports = wishlistRouter

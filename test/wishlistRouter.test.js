@@ -17,7 +17,7 @@ const {Wishlists} = require('../models')
 // Test Database seed functions
 
 	function seedWishlistDatabase(){
-		console.info('creating test database of users')
+		console.info('creating test database of wishlists')
 		const seedData = []
 
 		for (let i = 1; i <= 3; i++){
@@ -83,8 +83,28 @@ describe('Wishlist api resource', () => {
 					res.should.have.status(200)
 					res.body.wishlists.should.have.length.of.at.least(1)
 				})
+		});
+
+		it('should return a particular wishlist', () => {
+			let res;
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					let wishlist = list.listRepr()
+					
+					return chai.request(app)
+						.get(`/wishlists/${wishlist.id}`)
+						.then(_res => {
+							res = _res
+							res.should.have.status(200)
+							res.body.id.should.be.equal(wishlist.id.toString())
+							res.body.title.should.be.equal(wishlist.title)
+							res.body.items.should.deep.equal(wishlist.items)
+						})
+				})
 		})
-	})
+	});
 
 	describe('Post endpoint', () => {
 		it('should post new wishlist to database', () => {
@@ -100,10 +120,11 @@ describe('Wishlist api resource', () => {
 					res = _res
 					res.should.have.status(201)
 					res.body.title.should.be.equal(wishlist.title)
+					res.body.title.should.be.a('string')
 					res.body.items.should.deep.equal([])
 				})
 		})
-	})
+	});
 
 
 	describe('Put endpoint', () => {
