@@ -17,7 +17,7 @@ const {Wishlists} = require('../models')
 // Test Database seed functions
 
 	function seedWishlistDatabase(){
-		console.info('creating test database of users')
+		console.info('creating test database of wishlists')
 		const seedData = []
 
 		for (let i = 1; i <= 3; i++){
@@ -30,7 +30,7 @@ const {Wishlists} = require('../models')
 	function generateWishlistData(){
 		return {
 			title: generateTitle(),
-			items: [generateItem(), generateItem(), generateItem(), generateItem()]
+			items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
 		}
 	}
 
@@ -38,13 +38,8 @@ const {Wishlists} = require('../models')
 		return faker.random.word()
 	}
 
-	function generateItem(){
-		let element = faker.random.objectElement()
-		return {
-			element1: element,
-			element2: element,
-			element3: element,
-		}
+	function generateItemId(){
+		return faker.random.uuid()
 	}
 // 
 
@@ -83,8 +78,28 @@ describe('Wishlist api resource', () => {
 					res.should.have.status(200)
 					res.body.wishlists.should.have.length.of.at.least(1)
 				})
+		});
+
+		it('should return a particular wishlist', () => {
+			let res;
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					let wishlist = list.listRepr()
+					
+					return chai.request(app)
+						.get(`/wishlists/${wishlist.id}`)
+						.then(_res => {
+							res = _res
+							res.should.have.status(200)
+							res.body.id.should.be.equal(wishlist.id.toString())
+							res.body.title.should.be.equal(wishlist.title)
+							res.body.items.should.deep.equal(wishlist.items)
+						})
+				})
 		})
-	})
+	});
 
 	describe('Post endpoint', () => {
 		it('should post new wishlist to database', () => {
@@ -100,7 +115,95 @@ describe('Wishlist api resource', () => {
 					res = _res
 					res.should.have.status(201)
 					res.body.title.should.be.equal(wishlist.title)
+					res.body.title.should.be.a('string')
 					res.body.items.should.deep.equal([])
+				})
+		})
+	});
+
+
+	describe('Put endpoint', () => {
+		it('should update wishlist title', () => {
+			let updateList = {
+				title: 'The Life of Pablo'
+			}
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					updateList.id = list.id
+					return chai.request(app)
+						.put(`/wishlists/${list.id}`)
+						.send(updateList)
+				})
+				.then(res => {
+					res.should.have.status(201)
+
+					return Wishlists.findById(updateList.id).exec()
+				})
+				.then(list => {
+					list.title.should.be.equal(updateList.title)
+				})
+		})
+
+		it('should add ebook id to items array', () => {
+			let ebookId = generateItemId()
+			let updateItem = {
+				item: ebookId
+			}
+
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					updateItem.id = list.id
+					return chai.request(app)
+						.put(`/wishlists/${updateItem.id}/${ebookId}`)
+						.send(updateItem)
+				})
+				.then(res => {
+					res.should.have.status(201)
+					res.body.items.should.be.a('array')
+					res.body.items.should.include(updateItem.item)
+				})
+		})
+	})
+
+
+	describe('Delete endpoint', () => {
+		it('should remove wishlist', () => {
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					return chai.request(app)
+						.delete(`/wishlists/${list.id}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
+				})
+		})
+		it('should remove wishlist', () => {
+			let bookId;
+			let listId;
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					listId = list.id
+					bookId = list.items[0]
+					return chai.request(app)
+						.delete(`/wishlists/${list.id}/${bookId}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
+
+					return Wishlists
+						.findById(listId)
+						.exec()
+						.then(list => {
+							list.items.should.not.include(bookId)
+						})
 				})
 		})
 	})
