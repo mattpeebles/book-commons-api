@@ -15,9 +15,9 @@ const {Ebooks} = require('../models')
 ebookRouter.use(jsonParser)
 
 
-// TODO
-// Add route to update ebook in database
-// Add route to remove ebook from database
+//Routes
+//Get all ebooks, get particular ebook, post ebook, and delete ebook
+//No need for put as there's nothing needed to be updated at this time
 
 
 ebookRouter.get('/', (req, res) => {
@@ -67,6 +67,12 @@ ebookRouter.post('/', (req, res) => {
 			console.error(err)
 			res.status(500).json({message: 'Internal service error'})
 		})
+})
+
+ebookRouter.delete('/:bookId', (req, res) => {
+	Ebooks
+		.findByIdAndRemove(req.params.bookId)
+		.then(() => res.status(204).end())
 })
 
 module.exports = ebookRouter

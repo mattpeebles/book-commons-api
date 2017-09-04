@@ -164,4 +164,22 @@ describe('Ebook api resource', () => {
 		})
 	})
 
+	describe('Delete endpoint', () => {
+		it('should remove ebook from database', () => {
+			let bookId;
+			Ebooks
+				.findOne()
+				.exec()
+				.then(book => {
+					bookId = book.id
+
+					return chai.request(app)
+						.delete(`/ebooks/${bookId}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
+				})
+		})
+	})
+
 })
