@@ -30,7 +30,7 @@ const {Wishlists} = require('../models')
 	function generateWishlistData(){
 		return {
 			title: generateTitle(),
-			items: [generateItem(), generateItem(), generateItem(), generateItem()]
+			items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
 		}
 	}
 
@@ -38,13 +38,8 @@ const {Wishlists} = require('../models')
 		return faker.random.word()
 	}
 
-	function generateItem(){
-		let element = faker.random.objectElement()
-		return {
-			element1: element,
-			element2: element,
-			element3: element,
-		}
+	function generateItemId(){
+		return faker.random.uuid()
 	}
 // 
 
@@ -148,6 +143,28 @@ describe('Wishlist api resource', () => {
 				})
 				.then(list => {
 					list.title.should.be.equal(updateList.title)
+				})
+		})
+
+		it('should add ebook id to items array', () => {
+			let ebookId = generateItemId()
+			let updateItem = {
+				item: ebookId
+			}
+
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					updateItem.id = list.id
+					return chai.request(app)
+						.put(`/wishlists/${updateItem.id}/${ebookId}`)
+						.send(updateItem)
+				})
+				.then(res => {
+					res.should.have.status(201)
+					res.body.items.should.be.a('array')
+					res.body.items.should.include(updateItem.item)
 				})
 		})
 	})

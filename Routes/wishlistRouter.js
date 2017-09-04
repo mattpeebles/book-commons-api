@@ -15,7 +15,6 @@ wishlistRouter.use(jsonParser)
 
 
 // TODO
-// add itemid to items array
 // update item wishlist location
 // remove item from wishlist
 
@@ -63,8 +62,8 @@ wishlistRouter.post('/', (req, res) => {
 wishlistRouter.put('/:listId', (req, res) => {
 	if (!(req.params.listId === req.body.id)){
 		const message = (
-		  `Request path entryId (${req.params.entryId}) and request body entryId ` +
-		  `(${req.body.entryId}) must match`);
+		  `Request path listId (${req.params.listId}) and request body listId ` +
+		  `(${req.body.listId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});
 	}
@@ -83,6 +82,37 @@ wishlistRouter.put('/:listId', (req, res) => {
 		.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
 		.then(wishlist => res.status(201).json(wishlist.listRepr()))
 });
+
+
+wishlistRouter.put('/:listId/:bookId', (req, res) => {
+	if (!(req.params.listId === req.body.id)){
+		const message = (
+		  `Request path listId (${req.params.listId}) and request body id ` +
+		  `(${req.body.listId}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});
+	}
+
+	let wishlist;
+	let toUpdate;
+
+	Wishlists
+		.findById(req.params.listId)
+		.exec()
+		.then(list => {
+			list.items.push(req.params.bookId)
+			toUpdate = {
+				items: list.items
+			}
+
+			return toUpdate
+		})
+		.then(toUpdate => {
+			Wishlists
+				.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+				.then(list => res.status(201).json(list.listRepr()))
+		})
+})
 
 
 
