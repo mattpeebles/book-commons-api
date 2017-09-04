@@ -183,5 +183,28 @@ describe('Wishlist api resource', () => {
 					res.should.have.status(204)
 				})
 		})
+		it('should remove wishlist', () => {
+			let bookId;
+			let listId;
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					listId = list.id
+					bookId = list.items[0]
+					return chai.request(app)
+						.delete(`/wishlists/${list.id}/${bookId}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
+
+					return Wishlists
+						.findById(listId)
+						.exec()
+						.then(list => {
+							list.items.should.not.include(bookId)
+						})
+				})
+		})
 	})
 })

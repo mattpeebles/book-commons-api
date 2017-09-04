@@ -15,7 +15,6 @@ wishlistRouter.use(jsonParser)
 
 
 // TODO
-// update item wishlist location
 // remove item from wishlist
 
 wishlistRouter.get('/', (req, res) => {
@@ -124,5 +123,24 @@ wishlistRouter.delete('/:listId', (req, res) => {
 			res.status(204).end()
 		})
 });
+
+wishlistRouter.delete('/:listId/:bookId', (req, res) => {
+	Wishlists
+		.findById(req.params.listId)
+		.exec()
+		.then(list => {
+			let updatedItems = {
+				id: req.params.listId,
+				items: list.items.filter(item => item !== req.params.bookId)
+			}
+
+			Wishlists
+				.findByIdAndUpdate(req.params.listId, {$set: updatedItems}, {new: true})
+				.then(list => {
+					console.log(`Item ${req.params.bookId} was deleted`)
+					res.status(204).end()
+				})
+		})
+})
 
 module.exports = wishlistRouter
