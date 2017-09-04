@@ -55,7 +55,7 @@ const {Ebooks} = require('../models')
 	}
 
 	function generatePublishDate(){
-		return faker.date.past()
+		return faker.date.past().toString()
 	}
 
 	function generateLanguages(){
@@ -136,6 +136,30 @@ describe('Ebook api resource', () => {
 							res.should.have.status(200)
 							res.body.id.should.be.equal(bookId)
 						})
+				})
+		})
+	})
+
+	describe('Post endpoint', () => {
+		it('should post new ebook to database', () => {
+			let ebook = generateEbookData()
+
+			return chai.request(app)
+				.post('/ebooks')
+				.send(ebook)
+				.then(res => {
+
+					res.should.have.status(201)
+					res.body.title.should.be.equal(ebook.title)
+					res.body.author.should.be.equal(ebook.author)
+					res.body.preview.should.be.equal(ebook.preview)
+					res.body.publishDate.should.be.equal(ebook.publishDate)
+					res.body.languages.should.deep.equal(ebook.languages)
+					res.body.pages.should.be.equal(ebook.pages)
+					res.body.formats.should.deep.equal(ebook.formats)
+					res.body.location.should.be.equal(ebook.location)
+					res.body.locationIcon.should.be.equal(ebook.locationIcon)
+					res.body.locationUrl.should.be.equal(ebook.locationUrl)
 				})
 		})
 	})
