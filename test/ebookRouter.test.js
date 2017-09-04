@@ -119,6 +119,25 @@ describe('Ebook api resource', () => {
 					res.body.ebooks.should.have.length.of.at.least(1)
 				})
 		})
+
+		it('should return a particular ebook', () => {
+			let bookId;
+			let res;
+			return Ebooks
+				.findOne()
+				.exec()
+				.then(ebook => {
+					bookId = ebook.id
+
+					return chai.request(app)
+						.get(`/ebooks/${bookId}`)
+						.then(_res => {
+							res = _res
+							res.should.have.status(200)
+							res.body.id.should.be.equal(bookId)
+						})
+				})
+		})
 	})
 
 })
