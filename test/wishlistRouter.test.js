@@ -107,25 +107,43 @@ describe('Wishlist api resource', () => {
 
 
 	describe('Put endpoint', () => {
-		let updateList = {
-			title: 'The Life of Pablo'
-		}
-		return Wishlists
-			.findOne()
-			.exec()
-			.then(list => {
-				updateList.id = list.id
-				return chai.request(app)
-					.put(`/wishlists/${list.id}`)
-					.send(list)
-			})
-			.then(res => {
-				res.should.have.status(201)
+		it('should update wishlist title', () => {
+			let updateList = {
+				title: 'The Life of Pablo'
+			}
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					updateList.id = list.id
+					return chai.request(app)
+						.put(`/wishlists/${list.id}`)
+						.send(updateList)
+				})
+				.then(res => {
+					res.should.have.status(201)
 
-				return Wishlists.findById(updateList.id).exec()
-			})
-			.then(list => {
-				res.title.should.be.equal(updateList.title)
-			})
+					return Wishlists.findById(updateList.id).exec()
+				})
+				.then(list => {
+					list.title.should.be.equal(updateList.title)
+				})
+		})
+	})
+
+
+	describe('Delete endpoint', () => {
+		it('should remove wishlist', () => {
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					return chai.request(app)
+						.delete(`/wishlists/${list.id}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
+				})
+		})
 	})
 })

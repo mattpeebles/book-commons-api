@@ -50,7 +50,6 @@ wishlistRouter.post('/', (req, res) => {
 })
 
 wishlistRouter.put('/:id', (req, res) => {
-	
 	if (!(req.params.id === req.body.id)){
 		const message = (
 		  `Request path entryId (${req.params.entryId}) and request body entryId ` +
@@ -65,7 +64,33 @@ wishlistRouter.put('/:id', (req, res) => {
 
 	const updateableFields = ['title']
 
+	updateableFields.forEach(field => {
+		if(field in req.body){
+			toUpdate[field] = req.body[field]
+		}
+	})
 
+	Wishlists
+		.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+		.then(wishlist => res.status(201).json(wishlist.listRepr()))
 })
 
+
+
+wishlistRouter.delete('/:id', (req, res) => {
+	let wishlist;
+
+	Wishlists
+		.findById(req.params.id)
+		.then(list => {
+			wishlist = list
+		})
+
+	Wishlists
+		.findByIdAndRemove(req.params.id)
+		.then(() => {
+			console.log(`${wishlist.title} Wishlist was removed`)
+			res.status(204).end()
+		})
+})
 module.exports = wishlistRouter
