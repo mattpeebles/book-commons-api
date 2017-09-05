@@ -22,9 +22,6 @@ userRouter.use(passport.session())
 
 // TODO
 // Post wishlist to wishlist array
-// Update wishlist array
-// Update email
-// Update password
 // Remove wishlist from wishlist array
 // Remove profile
 // 	then wishlists
@@ -164,6 +161,37 @@ userRouter.put('/:userId', authorize, (req, res) => {
 		.exec()
 		.then(user => res.status(201).json(user.userRepr()))
 		.catch(err => res.status(500).json({message: 'Internal server error'}))
+})
+
+userRouter.put('/:userId/:listId', authorize, (req, res) => {
+	if(!(req.params.userId === req.body.id)){
+		const message = (
+		  `Request path id (${req.params.userId}) and request body id ` +
+		  `(${req.body.id}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});	
+	}
+
+	let newList = req.params.listId
+
+	let toUpdate = {}
+
+	return Users
+		.findById(req.params.userId)
+		.exec()
+		.then(user => {
+			let wishlists = user.wishlists
+			wishlists.push(newList)
+
+			toUpdate['wishlists'] = wishlists
+
+			return Users
+				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+				.exec()
+				.then(user => {
+					res.status(201).json(user.userRepr())
+				})
+		})
 })
 
 
