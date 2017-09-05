@@ -65,7 +65,7 @@ adds an ebook with values
 - locationUrl
 
 #### Put <a name="ebookPut"></a>
-There is not put route for ebooks. These ebook objects ideally and practically are immutable as they are pulled from outside databases.
+There is not a put route for ebooks. These ebook objects ideally and practically are immutable as they are pulled from outside databases.
 
 #### Delete <a name="ebookDelete"></a>
 `/ebooks/:bookId`
@@ -79,7 +79,7 @@ Removes ebook from
 `/wishlists`
 lists all wishlists
 
-`/ebooks/:listId`
+`/wishlists/:listId`
 displays list with id in parameter
 
 #### Post <a name="wishlistPost"></a>
@@ -120,7 +120,7 @@ allows user to login
 initiates session
 
 #### Logout <a name="usersLogout"></a>
-`/users/logout/
+`/users/logout/`
 *get request*
 logs user out
 ends session
