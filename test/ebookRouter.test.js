@@ -162,6 +162,35 @@ describe('Ebook api resource', () => {
 					res.body.locationUrl.should.be.equal(ebook.locationUrl)
 				})
 		})
+
+		it('should not post duplicate ebook to database', () => {
+			let ebook = generateEbookData()
+
+			return chai.request(app)
+				.post('/ebooks')
+				.send(ebook)
+				.then(res => {
+					res.should.have.status(201)
+					
+					return chai.request(app)
+						.post('/ebooks')
+						.send(ebook)
+						.then(res => {
+							res.should.have.status(200)
+							res.body.message.should.be.equal('Book exists in database already')
+							res.body.ebook.title.should.be.equal(ebook.title)
+							res.body.ebook.author.should.be.equal(ebook.author)
+							res.body.ebook.preview.should.be.equal(ebook.preview)
+							res.body.ebook.publishDate.should.be.equal(ebook.publishDate)
+							res.body.ebook.languages.should.deep.equal(ebook.languages)
+							res.body.ebook.pages.should.be.equal(ebook.pages)
+							res.body.ebook.formats.should.deep.equal(ebook.formats)
+							res.body.ebook.location.should.be.equal(ebook.location)
+							res.body.ebook.locationIcon.should.be.equal(ebook.locationIcon)
+							res.body.ebook.locationUrl.should.be.equal(ebook.locationUrl)
+						})
+				})
+		})
 	})
 
 	describe('Delete endpoint', () => {
