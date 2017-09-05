@@ -13,10 +13,6 @@ const {Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
-
-// TODO
-// remove item from wishlist
-
 wishlistRouter.get('/', (req, res) => {
 	Wishlists
 		.find()
@@ -99,17 +95,22 @@ wishlistRouter.put('/:listId/:bookId', (req, res) => {
 		.findById(req.params.listId)
 		.exec()
 		.then(list => {
-			list.items.push(req.params.bookId)
-			toUpdate = {
-				items: list.items
+			
+			if(list.items.indexOf(req.params.bookId) > -1){
+				res.status(202).json({message: 'Item already exists in wishlist'})
 			}
 
-			return toUpdate
-		})
-		.then(toUpdate => {
-			Wishlists
-				.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
-				.then(list => res.status(201).json(list.listRepr()))
+			else{
+				list.items.push(req.params.bookId)
+				
+				toUpdate = {
+					items: list.items
+				}
+
+				Wishlists
+					.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+					.then(list => res.status(201).json(list.listRepr()))
+			}
 		})
 })
 

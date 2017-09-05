@@ -235,6 +235,31 @@ describe('Wishlist api resource', () => {
 					res.body.items.should.include(updateItem.item)
 				})
 		})
+
+		it('should not add a duplicate ebook id to items array', () => {
+			return chai.request(app)
+				.get('/wishlists')
+				.then(res => {
+					res.should.have.status(200)
+
+					return res.body.wishlists[0]
+				})
+				.then(list => {
+					let existentId = list.items[0]
+
+					return chai.request(app)
+						.put(`/wishlists/${list.id}/${existentId}`)
+						.send({
+							id: list.id,
+							item: existentId
+						})
+						.then(res => {
+							res.should.have.status(202)
+							res.body.message.should.be.equal('Item already exists in wishlist')
+						})
+
+				})
+		})
 	})
 
 
