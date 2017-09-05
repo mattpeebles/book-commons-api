@@ -58,7 +58,7 @@ wishlistRouter.put('/:listId', (req, res) => {
 	if (!(req.params.listId === req.body.id)){
 		const message = (
 		  `Request path listId (${req.params.listId}) and request body listId ` +
-		  `(${req.body.listId}) must match`);
+		  `(${req.body.id}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});
 	}
@@ -83,7 +83,7 @@ wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 	if (!(req.params.listId === req.body.id)){
 		const message = (
 		  `Request path listId (${req.params.listId}) and request body id ` +
-		  `(${req.body.listId}) must match`);
+		  `(${req.body.id}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});
 	}
@@ -116,6 +116,15 @@ wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 
 	//remove book from wishlist
 wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
+	if (!(req.params.listId === req.body.id)){
+		const message = (
+		  `Request path listId (${req.params.listId}) and request body id ` +
+		  `(${req.body.listId}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});
+	}
+
+
 	Wishlists
 		.findById(req.params.listId)
 		.exec()
@@ -128,23 +137,7 @@ wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 			Wishlists
 				.findByIdAndUpdate(req.params.listId, {$set: updatedItems}, {new: true})
 				.then(list => {
-					
-					Wishlists
-						.find({items: {$in: [req.params.bookId]}})
-						.count()
-						.then(count => {
-							if(count == 0){
-								Ebooks
-									.findByIdAndRemove(req.params.bookId)
-									.then(() => {
-										console.log(`Ebook ${req.params.bookId} was removed from wishlist and deleted from database`)
-										res.status(204).end()
-									})
-							}
-
-							console.log(`Ebook ${req.params.bookId} was removed from wishlist`)
-							res.status(204).end()	
-					})
+					res.status(201).json({message: 'Ebook removed from wishlist', wishlist: list.listRepr()})
 				})
 		})
 })

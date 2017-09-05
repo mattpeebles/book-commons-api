@@ -121,7 +121,7 @@ function tearDownDb(){
 }
 
 
-describe('Wishlist api resource', () => {
+describe('WISHLIST API RESOURCE', () => {
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
 	})
@@ -261,7 +261,7 @@ describe('Wishlist api resource', () => {
 				})
 		})
 
-		it('should remove book from wishlist items if book exists in multiple lists', () => {
+		it('should remove book from wishlist items', () => {
 			seedEbookDatabase()
 
 				//get a wishlist id
@@ -271,12 +271,9 @@ describe('Wishlist api resource', () => {
 					res.should.have.status(200)
 					res.body.wishlists.should.have.length.of.at.least(1)
 
-					return {
-						list1: res.body.wishlists[0].id,
-						list2: res.body.wishlists[1].id
-					}
+					return res.body.wishlists[0].id
 				})
-				.then(lists => {
+				.then(list => {
 						//get an ebook id
 					return chai.request(app)
 						.get('/ebooks')
@@ -285,87 +282,30 @@ describe('Wishlist api resource', () => {
 							res.body.ebooks.should.have.length.of.at.least(1)
 							
 							return {
-								listId1: lists.list1,
-								listId2: lists.list2,
+								listId: list,
 								ebookId: res.body.ebooks[0].id
 							}
 						})
 						.then(obj => {
-							//post ebook to wishlist 1
 							return chai.request(app)
-								.put(`/wishlists/${obj.listId1}/add/${obj.ebookId}`)
+								.put(`/wishlists/${obj.listId}/add/${obj.ebookId}`)
 								.send({
-									id: obj.listId1,
+									id: obj.listId,
 									item: obj.ebookId
 								})
 								.then(res => {
 									res.should.have.status(201)
-										//post ebook to wishlist 2
 									return chai.request(app)
-										.put(`/wishlists/${obj.listId2}/add/${obj.ebookId}`)
+										.put(`/wishlists/${obj.listId}/delete/${obj.ebookId}`)
 										.send({
-											id: obj.listId2,
+											id: obj.listId,
 											item: obj.ebookId
 										})
 										.then(res => {
 											res.should.have.status(201)
-
-											return chai.request(app)
-												.put(`/wishlists/${obj.listId1}/delete/${obj.ebookId}`)
+											res.body.message.should.be.equal('Ebook removed from wishlist')
+											res.body.wishlist.items.should.not.include(obj.ebookId)
 										})
-										.then(res => {
-											res.should.have.status(204)
-										})
-								})
-						})
-				})
-		});
-
-		it('should remove book from wishlist items and delete it if it exists in one list', () => {
-			seedEbookDatabase()
-
-				//get a wishlist id
-			return chai.request(app)
-				.get('/wishlists')
-				.then(res => {
-					res.should.have.status(200)
-					res.body.wishlists.should.have.length.of.at.least(1)
-
-					return {
-						list1: res.body.wishlists[0].id,
-						list2: res.body.wishlists[1].id
-					}
-				})
-				.then(lists => {
-						//get an ebook id
-					return chai.request(app)
-						.get('/ebooks')
-						.then(res => {
-							res.should.have.status(200)
-							res.body.ebooks.should.have.length.of.at.least(1)
-							
-							return {
-								listId1: lists.list1,
-								listId2: lists.list2,
-								ebookId: res.body.ebooks[0].id
-							}
-						})
-						.then(obj => {
-							//post ebook to wishlist 1
-							return chai.request(app)
-								.put(`/wishlists/${obj.listId1}/add/${obj.ebookId}`)
-								.send({
-									id: obj.listId1,
-									item: obj.ebookId
-								})
-								.then(res => {
-									res.should.have.status(201)
-
-									return chai.request(app)
-										.put(`/wishlists/${obj.listId1}/delete/${obj.ebookId}`)
-								})
-								.then(res => {
-									res.should.have.status(204)
 								})
 						})
 				})
