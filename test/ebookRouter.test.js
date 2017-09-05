@@ -12,7 +12,7 @@ const faker = require('faker')
 
 const {TEST_DATABASE_URL} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Ebooks} = require('../models')
+const {Ebooks, Wishlists} = require('../models')
 
 // Test Database seed functions
 
@@ -55,7 +55,7 @@ const {Ebooks} = require('../models')
 	}
 
 	function generatePublishDate(){
-		return faker.date.past()
+		return faker.date.past().toString()
 	}
 
 	function generateLanguages(){
@@ -119,6 +119,68 @@ describe('Ebook api resource', () => {
 					res.body.ebooks.should.have.length.of.at.least(1)
 				})
 		})
+
+		it('should return a particular ebook', () => {
+			let bookId;
+			let res;
+			return Ebooks
+				.findOne()
+				.exec()
+				.then(ebook => {
+					bookId = ebook.id
+
+					return chai.request(app)
+						.get(`/ebooks/${bookId}`)
+						.then(_res => {
+							res = _res
+							res.should.have.status(200)
+							res.body.id.should.be.equal(bookId)
+						})
+				})
+		})
+	})
+
+	describe('Post endpoint', () => {
+		it('should post new ebook to database', () => {
+			let ebook = generateEbookData()
+
+			return chai.request(app)
+				.post('/ebooks')
+				.send(ebook)
+				.then(res => {
+
+					res.should.have.status(201)
+					res.body.title.should.be.equal(ebook.title)
+					res.body.author.should.be.equal(ebook.author)
+					res.body.preview.should.be.equal(ebook.preview)
+					res.body.publishDate.should.be.equal(ebook.publishDate)
+					res.body.languages.should.deep.equal(ebook.languages)
+					res.body.pages.should.be.equal(ebook.pages)
+					res.body.formats.should.deep.equal(ebook.formats)
+					res.body.location.should.be.equal(ebook.location)
+					res.body.locationIcon.should.be.equal(ebook.locationIcon)
+					res.body.locationUrl.should.be.equal(ebook.locationUrl)
+				})
+		})
+	})
+
+	describe('Delete endpoint', () => {
+		it('should remove ebook from database', () => {
+			let bookId;
+			return Ebooks
+				.findOne()
+				.exec()
+				.then(book => {
+					bookId = book.id
+
+					return chai.request(app)
+						.delete(`/ebooks/${bookId}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
+				})
+		})
+
 	})
 
 })

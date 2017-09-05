@@ -1,10 +1,11 @@
 const mongoose = require('mongoose')
+const bcrypt = require('bcrypt')
 
 
 const UserSchema = mongoose.Schema({
 	email: {type: String, required: true},
 	password: {type: String, required: true},
-	wishlists: {type: [String], required: true}
+	wishlists: {type: [String], 'default': []}
 })
 
 
@@ -15,6 +16,15 @@ UserSchema.methods.userRepr = function(){
 		wishlists: this.wishlists
 	}
 }
+
+UserSchema.methods.validatePassword = function(password) {
+	return bcrypt.compare(password, this.password)
+}
+
+UserSchema.statics.hashPassword = function(password){
+	return bcrypt.hash(password, 10)
+}
+
 
 const WishlistSchema = mongoose.Schema({
 	title: {type: String, required: true},

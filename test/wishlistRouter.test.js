@@ -12,35 +12,103 @@ const faker = require('faker')
 
 const {TEST_DATABASE_URL} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Wishlists} = require('../models')
+const {Wishlists, Ebooks} = require('../models')
 
 // Test Database seed functions
+	//Ebook database
+		function seedEbookDatabase(){
+			console.info('creating test database of users')
+			const seedData = []
 
-	function seedWishlistDatabase(){
-		console.info('creating test database of wishlists')
-		const seedData = []
+			for (let i = 1; i <= 3; i++){
+				seedData.push(generateEbookData())
+			}
 
-		for (let i = 1; i <= 3; i++){
-			seedData.push(generateWishlistData())
+			return Ebooks.insertMany(seedData)
 		}
 
-		return Wishlists.insertMany(seedData)
-	}
-
-	function generateWishlistData(){
-		return {
-			title: generateTitle(),
-			items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
+		function generateEbookData(){
+			return {
+					title: generateTitle(),
+					author: generateAuthor(),
+					preview: generatePreview(),
+					publishDate: generatePublishDate(),
+					languages: generateLanguages(),
+					pages: generatePages(),
+					formats: generateFormats(),
+					location: generateLocation(),
+					locationIcon: generateLocationIcon(),
+					locationUrl: generateLocationUrl()
+			}
 		}
-	}
 
-	function generateTitle(){
-		return faker.random.word()
-	}
+		function generateTitle(){
+			return faker.name.title()
+		}
 
-	function generateItemId(){
-		return faker.random.uuid()
-	}
+		function generateAuthor(){
+			return faker.name.firstName()
+		}
+
+		function generatePreview(){
+			return faker.internet.url()
+		}
+
+		function generatePublishDate(){
+			return faker.date.past().toString()
+		}
+
+		function generateLanguages(){
+			return [faker.random.word(), faker.random.word()]
+		}
+
+		function generatePages(){
+			return faker.random.number()
+		}
+
+		function generateFormats(){
+			return ['epub', 'mobi', 'pdf']
+		}
+
+		function generateLocation(){
+			return faker.internet.url()
+		}
+
+		function generateLocationIcon(){
+			return faker.image.imageUrl()
+		}
+
+		function generateLocationUrl(){
+			return faker.internet.url()
+		}
+	// 
+	//Wishlist database
+		function seedWishlistDatabase(){
+			console.info('creating test database of wishlists')
+			const seedData = []
+
+			for (let i = 1; i <= 3; i++){
+				seedData.push(generateWishlistData())
+			}
+			return Wishlists.insertMany(seedData)
+		}
+
+		function generateWishlistData(){
+			return {
+				title: generateTitle(),
+				items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
+			}
+		}
+
+		function generateTitle(){
+			return faker.random.word()
+		}
+
+		function generateItemId(){
+			return faker.random.uuid()
+		}
+	//
+
 // 
 
 function tearDownDb(){
@@ -167,6 +235,31 @@ describe('Wishlist api resource', () => {
 					res.body.items.should.include(updateItem.item)
 				})
 		})
+
+		it('should not add a duplicate ebook id to items array', () => {
+			return chai.request(app)
+				.get('/wishlists')
+				.then(res => {
+					res.should.have.status(200)
+
+					return res.body.wishlists[0]
+				})
+				.then(list => {
+					let existentId = list.items[0]
+
+					return chai.request(app)
+						.put(`/wishlists/${list.id}/${existentId}`)
+						.send({
+							id: list.id,
+							item: existentId
+						})
+						.then(res => {
+							res.should.have.status(202)
+							res.body.message.should.be.equal('Item already exists in wishlist')
+						})
+
+				})
+		})
 	})
 
 
@@ -182,29 +275,117 @@ describe('Wishlist api resource', () => {
 				.then(res => {
 					res.should.have.status(204)
 				})
-		})
-		it('should remove wishlist', () => {
-			let bookId;
-			let listId;
-			return Wishlists
-				.findOne()
-				.exec()
-				.then(list => {
-					listId = list.id
-					bookId = list.items[0]
-					return chai.request(app)
-						.delete(`/wishlists/${list.id}/${bookId}`)
-				})
-				.then(res => {
-					res.should.have.status(204)
+		});
 
-					return Wishlists
-						.findById(listId)
-						.exec()
-						.then(list => {
-							list.items.should.not.include(bookId)
+		it('should remove book from wishlist items if book exists in multiple lists', () => {
+			seedEbookDatabase()
+
+				//get a wishlist id
+			return chai.request(app)
+				.get('/wishlists')
+				.then(res => {
+					res.should.have.status(200)
+					res.body.wishlists.should.have.length.of.at.least(1)
+
+					return {
+						list1: res.body.wishlists[0].id,
+						list2: res.body.wishlists[1].id
+					}
+				})
+				.then(lists => {
+						//get an ebook id
+					return chai.request(app)
+						.get('/ebooks')
+						.then(res => {
+							res.should.have.status(200)
+							res.body.ebooks.should.have.length.of.at.least(1)
+							
+							return {
+								listId1: lists.list1,
+								listId2: lists.list2,
+								ebookId: res.body.ebooks[0].id
+							}
+						})
+						.then(obj => {
+							//post ebook to wishlist 1
+							return chai.request(app)
+								.put(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+								.send({
+									id: obj.listId1,
+									item: obj.ebookId
+								})
+								.then(res => {
+									res.should.have.status(201)
+										//post ebook to wishlist 2
+									return chai.request(app)
+										.put(`/wishlists/${obj.listId2}/${obj.ebookId}`)
+										.send({
+											id: obj.listId2,
+											item: obj.ebookId
+										})
+										.then(res => {
+											res.should.have.status(201)
+
+											return chai.request(app)
+												.delete(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+										})
+										.then(res => {
+											res.should.have.status(204)
+										})
+								})
 						})
 				})
-		})
+		});
+
+		it('should remove book from wishlist items and delete it if it exists in one list', () => {
+			seedEbookDatabase()
+
+				//get a wishlist id
+			return chai.request(app)
+				.get('/wishlists')
+				.then(res => {
+					res.should.have.status(200)
+					res.body.wishlists.should.have.length.of.at.least(1)
+
+					return {
+						list1: res.body.wishlists[0].id,
+						list2: res.body.wishlists[1].id
+					}
+				})
+				.then(lists => {
+						//get an ebook id
+					return chai.request(app)
+						.get('/ebooks')
+						.then(res => {
+							res.should.have.status(200)
+							res.body.ebooks.should.have.length.of.at.least(1)
+							
+							return {
+								listId1: lists.list1,
+								listId2: lists.list2,
+								ebookId: res.body.ebooks[0].id
+							}
+						})
+						.then(obj => {
+							//post ebook to wishlist 1
+							return chai.request(app)
+								.put(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+								.send({
+									id: obj.listId1,
+									item: obj.ebookId
+								})
+								.then(res => {
+									res.should.have.status(201)
+
+									return chai.request(app)
+										.delete(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+								})
+								.then(res => {
+									res.should.have.status(204)
+								})
+						})
+				})
+		});
+
 	})
 })

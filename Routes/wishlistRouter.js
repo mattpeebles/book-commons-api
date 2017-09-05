@@ -9,13 +9,9 @@ const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
 
-const {Wishlists} = require('../models')
+const {Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
-
-
-// TODO
-// remove item from wishlist
 
 wishlistRouter.get('/', (req, res) => {
 	Wishlists
@@ -99,17 +95,22 @@ wishlistRouter.put('/:listId/:bookId', (req, res) => {
 		.findById(req.params.listId)
 		.exec()
 		.then(list => {
-			list.items.push(req.params.bookId)
-			toUpdate = {
-				items: list.items
+			
+			if(list.items.indexOf(req.params.bookId) > -1){
+				res.status(202).json({message: 'Item already exists in wishlist'})
 			}
 
-			return toUpdate
-		})
-		.then(toUpdate => {
-			Wishlists
-				.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
-				.then(list => res.status(201).json(list.listRepr()))
+			else{
+				list.items.push(req.params.bookId)
+				
+				toUpdate = {
+					items: list.items
+				}
+
+				Wishlists
+					.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+					.then(list => res.status(201).json(list.listRepr()))
+			}
 		})
 })
 
@@ -124,6 +125,7 @@ wishlistRouter.delete('/:listId', (req, res) => {
 		})
 });
 
+	//remove book from wishlist
 wishlistRouter.delete('/:listId/:bookId', (req, res) => {
 	Wishlists
 		.findById(req.params.listId)
@@ -137,8 +139,23 @@ wishlistRouter.delete('/:listId/:bookId', (req, res) => {
 			Wishlists
 				.findByIdAndUpdate(req.params.listId, {$set: updatedItems}, {new: true})
 				.then(list => {
-					console.log(`Item ${req.params.bookId} was deleted`)
-					res.status(204).end()
+					
+					Wishlists
+						.find({items: {$in: [req.params.bookId]}})
+						.count()
+						.then(count => {
+							if(count == 0){
+								Ebooks
+									.findByIdAndRemove(req.params.bookId)
+									.then(() => {
+										console.log(`Ebook ${req.params.bookId} was removed from wishlist and deleted from database`)
+										res.status(204).end()
+									})
+							}
+
+							console.log(`Ebook ${req.params.bookId} was removed from wishlist`)
+							res.status(204).end()	
+					})
 				})
 		})
 })
