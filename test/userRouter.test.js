@@ -289,4 +289,28 @@ describe('USERS API RESOURCE', () => {
 				})
 		})
 	})
+
+	describe('DELETE endpoint', () => {
+		it('should delete account', () => {
+			let res;
+			let agent = chai.request.agent(app)
+			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
+			return chai.request(app)
+				.post('/users')
+				.send(user)
+				.then(_res => {
+					return agent.post('/users/login')
+						.send(user)
+						.then(_res => {
+							res = _res
+							
+							return agent.delete(`/users/${res.body.user.id}`)
+								.then(_res => {
+									res = _res
+									res.should.have.status(204)
+								})
+						})
+				})			
+		})
+	})
 })

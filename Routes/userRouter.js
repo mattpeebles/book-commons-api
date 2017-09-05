@@ -21,7 +21,6 @@ userRouter.use(passport.session())
 
 
 // TODO
-// Post wishlist to wishlist array
 // Remove wishlist from wishlist array
 // Remove profile
 // 	then wishlists
@@ -47,7 +46,6 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
 userRouter.get('/logout', (req, res) => {
 	req.logOut()
 	return res.status(200).json({message: 'Log out successful'})
-
 })
 
 
@@ -192,6 +190,17 @@ userRouter.put('/:userId/:listId', authorize, (req, res) => {
 					res.status(201).json(user.userRepr())
 				})
 		})
+})
+
+userRouter.delete('/:userId', authorize, (req, res) => {
+	Users
+		.findByIdAndRemove(req.params.userId)
+		.exec()
+		.then(() => {
+			console.log(`Account ${req.params.userId} was deleted`)
+			res.status(204).end()
+		})
+		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 
 
