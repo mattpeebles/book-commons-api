@@ -186,4 +186,161 @@ describe('USERS API RESOURCE', () => {
 				})
 		})
 	})
+
+	describe('PUT endpoint', () => {
+		it('should update email', () => {
+			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
+			let agent = chai.request.agent(app)
+			let res;
+			let updateUser = {email: 'kendrick@lamar.com'}
+
+			return chai.request(app)
+				.post('/users')
+				.send(person)
+				.then(() => {
+					return agent.post('/users/login')
+						.send(person)
+						.then(res => {
+							let userId = res.body.user.id
+							updateUser['id'] = userId
+							return agent.put(`/users/${userId}`)
+								.send(updateUser)
+								.then(_res => {
+									res = _res
+									res.should.have.status(201)
+									res.body.email.should.be.equal(updateUser.email)
+								})
+						})
+				})
+		})
+
+		it('should update password', () => {
+			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
+			let agent = chai.request.agent(app)
+			let res;
+			let updateUser = {password: 'survive in america'}
+
+				//create new user
+			return chai.request(app)
+				.post('/users')
+				.send(person)
+				.then(() => {
+					
+					return agent.post('/users/login')
+						.send(person)
+						.then(res => {
+							let userId = res.body.user.id
+							updateUser['id'] = userId
+								
+								//update user password
+							return agent.put(`/users/${userId}`)
+								.send(updateUser)
+								.then(_res => {
+									res = _res
+									res.should.have.status(201)
+									res.body.message.should.be.equal('Password changed')
+
+										//logout user to check that new password can login user
+									return chai.request(app)
+										.get('/users/logout')
+										.then(() => {
+											return agent.post('/users/login')
+												.send({
+													email: person.email,
+													password: updateUser.password
+												})
+												.then(res => {
+													res.should.have.status(201)
+													res.body.message.should.be.equal('Logged in')
+												})
+										})
+								})
+						})
+				})
+		})
+
+		it('should add wishlist id to wishlist array', () => {
+			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
+			let wishlistId = faker.random.uuid()
+			let agent = chai.request.agent(app)
+			let res;
+
+			updateUser = {
+				wishlistId: wishlistId
+			}
+
+			return chai.request(app)
+				.post('/users')
+				.send(person)
+				.then(() => {
+					return agent.post('/users/login')
+						.send(person)
+						.then(res => {
+							let userId = res.body.user.id
+							updateUser['id'] = userId
+							return agent.put(`/users/${userId}/add/${wishlistId}`)
+								.send(updateUser)
+								.then(_res => {
+									res = _res
+									res.should.have.status(201)
+									res.body.wishlists.should.include(updateUser.wishlistId)
+								})
+						})
+				})
+		})
+
+		it('should remove wishlist id from wishlist array', () => {
+			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
+			let wishlistId = faker.random.uuid()
+			let agent = chai.request.agent(app)
+			let res;
+
+			updateUser = {
+				wishlistId: wishlistId
+			}
+
+			return chai.request(app)
+				.post('/users')
+				.send(person)
+				.then(() => {
+					return agent.post('/users/login')
+						.send(person)
+						.then(res => {
+							let userId = res.body.user.id
+							updateUser['id'] = userId
+							return agent.put(`/users/${userId}/delete/${wishlistId}`)
+								.send(updateUser)
+								.then(_res => {
+									res = _res
+									res.should.have.status(201)
+									res.body.wishlists.should.not.include(updateUser.wishlistId)
+								})
+						})
+				})
+		})
+	})
+
+	describe('DELETE endpoint', () => {
+		it('should delete account', () => {
+			let res;
+			let agent = chai.request.agent(app)
+			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
+			return chai.request(app)
+				.post('/users')
+				.send(user)
+				.then(_res => {
+					return agent.post('/users/login')
+						.send(user)
+						.then(_res => {
+							res = _res
+							
+							return agent.delete(`/users/${res.body.user.id}`)
+								.then(_res => {
+									res = _res
+									res.should.have.status(204)
+								})
+						})
+				})			
+		})
+	})
 })

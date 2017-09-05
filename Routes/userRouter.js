@@ -21,11 +21,7 @@ userRouter.use(passport.session())
 
 
 // TODO
-// Post wishlist to wishlist array
-// Update wishlist array
-// Update email
-// Update password
-// Remove wishlist from wishlist array
+// Refine remove wishlist, to delete wishlist and ebooks
 // Remove profile
 // 	then wishlists
 // 	then ebooks
@@ -42,7 +38,7 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
         // Manually establish the session...
         req.login(user, function(err) {
             if (err) return next(err);
-            res.status(201).json({message: 'Logged in'})
+            res.status(201).json({message: 'Logged in', user: user.userRepr()})
         });
     })(req, res, next);
 });
@@ -50,7 +46,6 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
 userRouter.get('/logout', (req, res) => {
 	req.logOut()
 	return res.status(200).json({message: 'Log out successful'})
-
 })
 
 
@@ -126,6 +121,114 @@ userRouter.post('/', (req, res) => {
 		.catch(err => {
 			res.status(500).json({message: 'Internal server error'})
 		})
+})
+
+userRouter.put('/:userId', authorize, (req, res) => {
+	if(!(req.params.userId === req.body.id)){
+		const message = (
+		  `Request path id (${req.params.userId}) and request body id ` +
+		  `(${req.body.id}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});		
+	}
+
+	const toUpdate = {}
+	const updateableFields = ['email', 'password']
+
+	updateableFields.forEach(field => {
+		if (field in req.body){
+			toUpdate[field] = req.body[field]
+		}
+	})
+
+	if (toUpdate.password !== undefined){
+		let message = (toUpdate.email !== undefined) ? 'Email and password changed' : 'Password changed'
+		return Users.hashPassword(toUpdate.password)
+			.then(hash => {
+				toUpdate['password'] = hash
+				return Users
+					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+					.exec()
+					.then(user => res.status(201).json({message: message, user: user.userRepr()}))
+					.catch(err => res.status(500).json({message: 'Internal server error'}))
+			})
+	}
+
+	return Users
+		.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+		.exec()
+		.then(user => res.status(201).json(user.userRepr()))
+		.catch(err => res.status(500).json({message: 'Internal server error'}))
+})
+
+userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
+	if(!(req.params.userId === req.body.id)){
+		const message = (
+		  `Request path id (${req.params.userId}) and request body id ` +
+		  `(${req.body.id}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});	
+	}
+
+	let newList = req.params.listId
+
+	let toUpdate = {}
+
+	return Users
+		.findById(req.params.userId)
+		.exec()
+		.then(user => {
+			let wishlists = user.wishlists
+			wishlists.push(newList)
+
+			toUpdate['wishlists'] = wishlists
+
+			return Users
+				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+				.exec()
+				.then(user => {
+					res.status(201).json(user.userRepr())
+				})
+		})
+})
+
+userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
+	if(!(req.params.userId === req.body.id)){
+		const message = (
+		  `Request path id (${req.params.userId}) and request body id ` +
+		  `(${req.body.id}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});	
+	}
+
+	let toUpdate = {}
+
+	return Users
+		.findById(req.params.userId)
+		.exec()
+		.then(user => {
+			let wishlists = user.wishlists.filter(id => id !== req.params.listId)
+
+			toUpdate['wishlists'] = wishlists
+
+			return Users
+				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+				.exec()
+				.then(user => {
+					res.status(201).json(user.userRepr())
+				})
+		})
+})
+
+userRouter.delete('/:userId', authorize, (req, res) => {
+	Users
+		.findByIdAndRemove(req.params.userId)
+		.exec()
+		.then(() => {
+			console.log(`Account ${req.params.userId} was deleted`)
+			res.status(204).end()
+		})
+		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 
 

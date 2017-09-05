@@ -79,7 +79,7 @@ wishlistRouter.put('/:listId', (req, res) => {
 });
 
 
-wishlistRouter.put('/:listId/:bookId', (req, res) => {
+wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 	if (!(req.params.listId === req.body.id)){
 		const message = (
 		  `Request path listId (${req.params.listId}) and request body id ` +
@@ -114,19 +114,8 @@ wishlistRouter.put('/:listId/:bookId', (req, res) => {
 		})
 })
 
-
-
-wishlistRouter.delete('/:listId', (req, res) => {
-	Wishlists
-		.findByIdAndRemove(req.params.listId)
-		.then(() => {
-			console.log(`${req.params.listId} Wishlist was removed`)
-			res.status(204).end()
-		})
-});
-
 	//remove book from wishlist
-wishlistRouter.delete('/:listId/:bookId', (req, res) => {
+wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 	Wishlists
 		.findById(req.params.listId)
 		.exec()
@@ -159,5 +148,16 @@ wishlistRouter.delete('/:listId/:bookId', (req, res) => {
 				})
 		})
 })
+
+
+
+wishlistRouter.delete('/:listId', (req, res) => {
+	Wishlists
+		.findByIdAndRemove(req.params.listId)
+		.then(() => {
+			console.log(`${req.params.listId} Wishlist was removed`)
+			res.status(204).end()
+		})
+});
 
 module.exports = wishlistRouter
