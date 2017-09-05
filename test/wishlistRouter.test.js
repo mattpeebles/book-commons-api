@@ -226,7 +226,7 @@ describe('Wishlist api resource', () => {
 				.then(list => {
 					updateItem.id = list.id
 					return chai.request(app)
-						.put(`/wishlists/${updateItem.id}/${ebookId}`)
+						.put(`/wishlists/${updateItem.id}/add/${ebookId}`)
 						.send(updateItem)
 				})
 				.then(res => {
@@ -248,7 +248,7 @@ describe('Wishlist api resource', () => {
 					let existentId = list.items[0]
 
 					return chai.request(app)
-						.put(`/wishlists/${list.id}/${existentId}`)
+						.put(`/wishlists/${list.id}/add/${existentId}`)
 						.send({
 							id: list.id,
 							item: existentId
@@ -260,22 +260,6 @@ describe('Wishlist api resource', () => {
 
 				})
 		})
-	})
-
-
-	describe('Delete endpoint', () => {
-		it('should remove wishlist', () => {
-			return Wishlists
-				.findOne()
-				.exec()
-				.then(list => {
-					return chai.request(app)
-						.delete(`/wishlists/${list.id}`)
-				})
-				.then(res => {
-					res.should.have.status(204)
-				})
-		});
 
 		it('should remove book from wishlist items if book exists in multiple lists', () => {
 			seedEbookDatabase()
@@ -309,7 +293,7 @@ describe('Wishlist api resource', () => {
 						.then(obj => {
 							//post ebook to wishlist 1
 							return chai.request(app)
-								.put(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+								.put(`/wishlists/${obj.listId1}/add/${obj.ebookId}`)
 								.send({
 									id: obj.listId1,
 									item: obj.ebookId
@@ -318,7 +302,7 @@ describe('Wishlist api resource', () => {
 									res.should.have.status(201)
 										//post ebook to wishlist 2
 									return chai.request(app)
-										.put(`/wishlists/${obj.listId2}/${obj.ebookId}`)
+										.put(`/wishlists/${obj.listId2}/add/${obj.ebookId}`)
 										.send({
 											id: obj.listId2,
 											item: obj.ebookId
@@ -327,7 +311,7 @@ describe('Wishlist api resource', () => {
 											res.should.have.status(201)
 
 											return chai.request(app)
-												.delete(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+												.put(`/wishlists/${obj.listId1}/delete/${obj.ebookId}`)
 										})
 										.then(res => {
 											res.should.have.status(204)
@@ -369,7 +353,7 @@ describe('Wishlist api resource', () => {
 						.then(obj => {
 							//post ebook to wishlist 1
 							return chai.request(app)
-								.put(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+								.put(`/wishlists/${obj.listId1}/add/${obj.ebookId}`)
 								.send({
 									id: obj.listId1,
 									item: obj.ebookId
@@ -378,12 +362,28 @@ describe('Wishlist api resource', () => {
 									res.should.have.status(201)
 
 									return chai.request(app)
-										.delete(`/wishlists/${obj.listId1}/${obj.ebookId}`)
+										.put(`/wishlists/${obj.listId1}/delete/${obj.ebookId}`)
 								})
 								.then(res => {
 									res.should.have.status(204)
 								})
 						})
+				})
+		});
+	})
+
+
+	describe('Delete endpoint', () => {
+		it('should remove wishlist', () => {
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => {
+					return chai.request(app)
+						.delete(`/wishlists/${list.id}`)
+				})
+				.then(res => {
+					res.should.have.status(204)
 				})
 		});
 
