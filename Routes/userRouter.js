@@ -21,7 +21,7 @@ userRouter.use(passport.session())
 
 
 // TODO
-// Remove wishlist from wishlist array
+// Refine remove wishlist, to delete wishlist and ebooks
 // Remove profile
 // 	then wishlists
 // 	then ebooks
@@ -161,7 +161,7 @@ userRouter.put('/:userId', authorize, (req, res) => {
 		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 
-userRouter.put('/:userId/:listId', authorize, (req, res) => {
+userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.id)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body id ` +
@@ -180,6 +180,34 @@ userRouter.put('/:userId/:listId', authorize, (req, res) => {
 		.then(user => {
 			let wishlists = user.wishlists
 			wishlists.push(newList)
+
+			toUpdate['wishlists'] = wishlists
+
+			return Users
+				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+				.exec()
+				.then(user => {
+					res.status(201).json(user.userRepr())
+				})
+		})
+})
+
+userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
+	if(!(req.params.userId === req.body.id)){
+		const message = (
+		  `Request path id (${req.params.userId}) and request body id ` +
+		  `(${req.body.id}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});	
+	}
+
+	let toUpdate = {}
+
+	return Users
+		.findById(req.params.userId)
+		.exec()
+		.then(user => {
+			let wishlists = user.wishlists.filter(id => id !== req.params.listId)
 
 			toUpdate['wishlists'] = wishlists
 
