@@ -10,9 +10,12 @@
   "author": "Matt Peebles",
   "license": "ISC",
   "dependencies": {
+    "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
+    "cookie-parser": "^1.4.3",
     "cors": "^2.8.4",
     "express": "^4.15.4",
+    "express-session": "^1.15.5",
     "faker": "^4.1.0",
     "mongoose": "^4.11.9",
     "passport": "^0.4.0",
