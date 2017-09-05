@@ -42,7 +42,7 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
         // Manually establish the session...
         req.login(user, function(err) {
             if (err) return next(err);
-            res.status(201).json({message: 'Logged in'})
+            res.status(201).json({message: 'Logged in', user: user.userRepr()})
         });
     })(req, res, next);
 });
@@ -126,6 +126,44 @@ userRouter.post('/', (req, res) => {
 		.catch(err => {
 			res.status(500).json({message: 'Internal server error'})
 		})
+})
+
+userRouter.put('/:userId', authorize, (req, res) => {
+	if(!(req.params.userId === req.body.id)){
+		const message = (
+		  `Request path id (${req.params.userId}) and request body id ` +
+		  `(${req.body.id}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});		
+	}
+
+	const toUpdate = {}
+	const updateableFields = ['email', 'password']
+
+	updateableFields.forEach(field => {
+		if (field in req.body){
+			toUpdate[field] = req.body[field]
+		}
+	})
+
+	if (toUpdate.password !== undefined){
+		let message = (toUpdate.email !== undefined) ? 'Email and password changed' : 'Password changed'
+		return Users.hashPassword(toUpdate.password)
+			.then(hash => {
+				toUpdate['password'] = hash
+				return Users
+					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+					.exec()
+					.then(user => res.status(201).json({message: message, user: user.userRepr()}))
+					.catch(err => res.status(500).json({message: 'Internal server error'}))
+			})
+	}
+
+	return Users
+		.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+		.exec()
+		.then(user => res.status(201).json(user.userRepr()))
+		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 
 
