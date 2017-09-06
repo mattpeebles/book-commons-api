@@ -54,7 +54,11 @@ lists all ebooks
 
 `/ebooks/:bookId`
 
-displays ebook with id in parameter
+displays particular ebook
+
+`/ebooks/wishlist/:listId`
+
+returns all ebooks associated with listId
 
 #### Post <a name="ebookPost"></a>
 `/ebooks`
@@ -77,7 +81,7 @@ There is not a put route for ebooks. These ebook objects ideally and practically
 #### Delete <a name="ebookDelete"></a>
 `/ebooks/:bookId`
 
-Removes ebook from 
+Removes ebook from database
 
 -----------
 
@@ -86,11 +90,11 @@ Removes ebook from
 #### Get <a name="wishlistGet"></a>
 `/wishlists`
 
-lists all wishlists
+lists all wishlists of user
 
 `/wishlists/:listId`
 
-displays list with id in parameter
+displays particular list
 
 #### Post <a name="wishlistPost"></a>
 `/wishlists`
@@ -104,18 +108,18 @@ adds a new wishlist with values
 `wishlists/:listId`
 
 - updates title of wishlist
-- must have id of wishlist in request body
+- must have id of wishlist in request body passed in as listId
 
 `/wishlists/:listId/add/:bookId`
 
 - adds ebook id to items array
-- must have id of wishlist in request body
+- must have id of wishlist in request body passed in as listId
 - prevents duplicate ids from being added to same wishlist
 
 `/wishlists/:listId/delete/:bookId`
 
 - removes ebook from items array
-- must have id of wishlist in request body
+- must have id of wishlist in request body passed in as listId
 
 
 #### Delete <a name="wishlistDelete"></a>
@@ -161,16 +165,16 @@ adds a new user with values that are accessible in client
 `users/:userId`
 
 - can update email and/or password of user
-- must have id of user in request body
+- must have id of user in request body passed in as userId
 
 `/users/:userId/add/:listId`
 
 - adds wishlist id to wishlists array
-- must have id of user in request body
+- must have id of user in request body passed in as userId
 
 `users/:userId/delete/:listId`
 - removes wishlist id from wishlist array
-- must have id of user in request body
+- must have id of user in request body passed in as userId
 
 
 #### Delete <a name="usersDelete"></a>

@@ -58,10 +58,13 @@ wishlistRouter.get('/:listId', (req, res) => {
 
 
 wishlistRouter.post('/', authorize, (req, res) => {
+	
+	let items = (req.body.items !== undefined) ? req.body.items : []
+
 	Wishlists
 		.create({
 			title: req.body.title,
-			items: []
+			items: items
 		})
 		.then(list => res.status(201).json(list.listRepr()))
 		.catch(err => {

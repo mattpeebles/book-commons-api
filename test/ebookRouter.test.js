@@ -1,7 +1,6 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
-const should = chai.should()
-const expect = chai.expect()
+const {expect, should} = require('chai')
 
 chai.use(chaiHttp)
 
@@ -94,11 +93,55 @@ function tearDownDb(){
 
 
 describe('EBOOK API RESOURCE', () => {
+	let wishlistIds = [];
+	let agent = chai.request.agent(app)
+
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
 	})
 	beforeEach(() => {
 		return seedEbookDatabase()
+	})
+	beforeEach(() => {
+		
+			//set up and log agent in to do authorized tests
+		wishlistIds = []
+		let user = {
+			email: 'frank@ocean.com',
+			password: 'chanel',
+			wishlists: wishlistIds
+		}
+
+		return Wishlists
+			.find()
+			.exec()
+			.then(lists => {
+				lists.forEach(list => {
+					wishlistIds.push(list.id)
+				})
+
+				return chai.request(app)
+						.post('/users')
+						.send(user)
+						.then(_res => {
+							_res.should.have.status(201)
+							return agent.post('/users/login')
+								.send({
+									email: user.email,
+									password: user.password
+								})			
+						})
+						.then(_res => {
+							console.log(`${user.email} is logged in`)
+						})
+			})
+	})
+	afterEach(() => {
+		return chai.request(app)
+			.get('/users/logout')
+			.then(() => {
+				console.log(`Agent logged out`)
+			})
 	})
 	afterEach(() => {
 		return tearDownDb()
@@ -113,6 +156,7 @@ describe('EBOOK API RESOURCE', () => {
 			let res;
 			return chai.request(app)
 				.get('/ebooks')
+				.send({message: 'hello'})
 				.then(_res => {
 					res = _res
 					res.should.have.status(200)
@@ -136,6 +180,47 @@ describe('EBOOK API RESOURCE', () => {
 							res.should.have.status(200)
 							res.body.id.should.be.equal(bookId)
 						})
+				})
+		})
+
+		it('should return all ebooks in wishlist', () => {
+			let bookIds = [];
+			let res;
+
+			
+				//prep
+				//get ebook ids and pass them to wishlist
+			return Ebooks
+				.find()
+				.exec()
+				.then(books => {
+
+					books.forEach(book => {
+						bookIds.push(book._id)
+					})
+
+						//prep
+						//post new wishlist with ebook ids in items
+					return agent.post('/wishlists')
+						.send({
+							title: 'Test',
+							items: bookIds
+						})
+
+				})
+				.then(res => {
+					let listId = res.body.id
+					return chai.request(app)
+						.get(`/ebooks/wishlist/${listId}`)
+				})
+				.then(res => {
+					res.should.have.status(200)
+					res.should.be.json
+					res.body.ebooks.length.should.be.equal(bookIds.length)
+					res.body.ebooks.forEach((book, index) => {
+						book.id.should.be.equal(bookIds[index].toString())
+					})
+
 				})
 		})
 	})

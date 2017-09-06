@@ -12,12 +12,14 @@ mongoose.Promise = global.Promise
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
-const {Ebooks} = require('../models')
+const {Wishlists, Ebooks} = require('../models')
 
 
 ebookRouter.use(jsonParser)
 
 ebookRouter.get('/', (req, res) => {
+	console.log(req.body.message)
+
 	Ebooks
 		.find()
 		.exec()
@@ -42,6 +44,35 @@ ebookRouter.get('/:bookId', (req, res) => {
 		.catch(err => {
 			console.error(err)
 			res.status(500).json({message: 'Internal service error'})
+		})
+})
+
+	//returns all ebooks in wishlist
+ebookRouter.get('/wishlist/:listId', (req, res) => {
+
+	Wishlists
+		.findById(req.params.listId)
+		.exec()
+		.then(list => {
+			let items = list.items
+			
+			let findArgs = []
+
+				//creates arguments to pass into find, converts ids back into mongoose ids
+			items.forEach(list => {
+				findArgs.push(new mongoose.Types.ObjectId( list ))
+			})
+
+			Ebooks
+				.find({'_id': {$in: findArgs}})
+				.exec()
+				.then(ebooks => {
+					res.json({ebooks: ebooks.map(ebook => ebook.ebookRepr())})
+				})
+				.catch(err => {
+					console.error(err)
+					res.status(500).json({message: 'Internal service error'})
+				})
 		})
 })
 
