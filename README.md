@@ -35,10 +35,12 @@ This is the API backend for *Book Commons*, a public domain ebook aggregator.
 
 ### Wishlist Route <a name="todoWishlist"></a>
 - [ ] On wishlist add, prevent duplicate wishlist titles from being added
+- [ ] On get wishlists, return only lists from the user
 
 ### Users Route <a name="todoUsers"></a>
+:+1::tada::musical_note::confetti_ball:
 - [x] On wishlist remove, delete wishlist from database
-- [ ] On account deletion, remove all wishlists
+- [x] On account deletion, remove all wishlists
 
 -----------
 ## Routes <a name="routes"></a>

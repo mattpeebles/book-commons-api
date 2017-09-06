@@ -12,12 +12,12 @@ const faker = require('faker')
 
 const {TEST_DATABASE_URL} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Wishlists, Ebooks} = require('../models')
+const {Users, Wishlists, Ebooks} = require('../models')
 
 // Test Database seed functions
 	//Ebook database
 		function seedEbookDatabase(){
-			console.info('creating test database of users')
+			console.info('creating test database of ebooks')
 			const seedData = []
 
 			for (let i = 1; i <= 3; i++){
@@ -137,14 +137,32 @@ describe('WISHLIST API RESOURCE', () => {
 	})
 
 	describe('Get endpoint', () => {
-		it('should return all wishlists', () => {
+		it('should return all wishlists of user', () => {
 			let res;
+			let agent = chai.request.agent(app)
+			let user = {
+				email: 'frank@ocean.com',
+				password: 'chanel'
+			}
 			return chai.request(app)
-				.get('/wishlists')
+				.post('/users')
+				.send(user)
 				.then(_res => {
-					res = _res
-					res.should.have.status(200)
-					res.body.wishlists.should.have.length.of.at.least(1)
+					return agent.post('/users/login')
+						.send(user)
+						.then(_res => {
+							res = _res
+							res.should.have.status(201)
+							res.body.message.should.be.equal('Logged in')
+						})
+						.then(() => {
+							return agent.get('/wishlists')
+								.then(_res => {
+									res = _res
+									res.should.have.status(200)
+									res.body.wishlists.should.have.length.of.at.least(1)
+								})
+						})
 				})
 		});
 
@@ -176,9 +194,22 @@ describe('WISHLIST API RESOURCE', () => {
 			}
 			
 			let res;
+			let agent = chai.request.agent(app)
+			let user = {
+				email: 'frank@ocean.com',
+				password: 'chanel'
+			}
 			return chai.request(app)
-				.post('/wishlists')
-				.send(wishlist)
+				.post('/users')
+				.send(user)
+				.then(_res => {
+					return agent.post('/users/login')
+						.send(user)
+				})
+				.then(_res => {
+					return agent.post('/wishlists')
+						.send(wishlist)
+				})
 				.then(_res => {
 					res = _res
 					res.should.have.status(201)
@@ -237,12 +268,13 @@ describe('WISHLIST API RESOURCE', () => {
 		})
 
 		it('should not add a duplicate ebook id to items array', () => {
-			return chai.request(app)
-				.get('/wishlists')
-				.then(res => {
-					res.should.have.status(200)
+			return Wishlists
+				.find()
+				.exec()
+				.then(lists => {
+					let listArray = lists.map(list => list.listRepr())
 
-					return res.body.wishlists[0]
+					return listArray[0]
 				})
 				.then(list => {
 					let existentId = list.items[0]
@@ -265,13 +297,12 @@ describe('WISHLIST API RESOURCE', () => {
 			seedEbookDatabase()
 
 				//get a wishlist id
-			return chai.request(app)
-				.get('/wishlists')
-				.then(res => {
-					res.should.have.status(200)
-					res.body.wishlists.should.have.length.of.at.least(1)
-
-					return res.body.wishlists[0].id
+			return Wishlists
+				.find()
+				.exec()
+				.then(lists => {
+					let listArray = lists.map(list => list.listRepr())
+					return listArray[0].id
 				})
 				.then(list => {
 						//get an ebook id

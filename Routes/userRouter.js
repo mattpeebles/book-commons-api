@@ -13,18 +13,7 @@ const jsonParser = bodyParser.json()
 const {passport, authorize} = require('../auth')
 
 userRouter.use(jsonParser)
-userRouter.use(jsonParser)
-userRouter.use(require('cookie-parser')())
-userRouter.use(require('express-session')({secret: 'hand again pig something its cent while occur', resave: true, saveUninitialized: true, cookie: { secure : false, maxAge : (4 * 60 * 60 * 1000)} }))
-userRouter.use(passport.initialize())
-userRouter.use(passport.session())
 
-
-// TODO
-// Refine remove wishlist, to delete wishlist and ebooks
-// Remove profile
-// 	then wishlists
-// 	then ebooks
 
 userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
     passport.authenticate('local', function(err, user, info) {  
@@ -93,10 +82,11 @@ userRouter.post('/', (req, res) => {
 			return Users.hashPassword(password)
 		})
 		.then(hash => {
+
 			return Users
 				.create({
 					email: email,
-					password: hash
+					password: hash,
 				})
 		})
 		.then(user => {
@@ -146,10 +136,10 @@ userRouter.put('/:userId', authorize, (req, res) => {
 })
 
 userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
-	if(!(req.params.userId === req.body.id)){
+	if(!(req.params.userId === req.body.userId)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.id}) must match`);
+		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});	
 	}
@@ -178,10 +168,10 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 })
 
 userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
-	if(!(req.params.userId === req.body.id)){
+	if(!(req.params.userId === req.body.userId)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.id}) must match`);
+		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});	
 	}
@@ -212,8 +202,33 @@ userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 
 userRouter.delete('/:userId', authorize, (req, res) => {
 	Users
-		.findByIdAndRemove(req.params.userId)
+		.findById(req.params.userId)
 		.exec()
+		.then(user => {
+			let wishlists = user.wishlists
+
+			let findArgs = []
+
+				//creates arguments to pass into find, converts ids back into mongoose ids
+			wishlists.forEach(list => {
+				findArgs.push(new mongoose.Types.ObjectId( list ))
+			})
+
+			Wishlists
+				.find({'_id': {$in: findArgs}})
+				.remove()
+				.exec()
+				.then(lists => {
+					console.log('All user wishlists have been deleted')
+				})
+
+			return user
+		})
+		.then(() => {
+			Users
+				.findByIdAndRemove(req.params.userId)
+				.exec()
+		})
 		.then(() => {
 			console.log(`Account ${req.params.userId} was deleted`)
 			res.status(204).end()

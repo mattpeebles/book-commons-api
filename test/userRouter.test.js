@@ -20,7 +20,7 @@ const {Users, Wishlists} = require('../models')
 			console.info('creating test database of wishlists')
 			const seedData = []
 
-			for (let i = 1; i <= 3; i++){
+			for (let i = 1; i <= 6; i++){
 				seedData.push(generateWishlistData())
 			}
 			return Wishlists.insertMany(seedData)
@@ -46,15 +46,18 @@ const {Users, Wishlists} = require('../models')
 	//User database
 		const usersArray = [{
 					email: 'frank@ocean.com',
-					password: 'chanel'
+					password: 'chanel',
+					wishlists: []
 				},
 				{
 					email: 'bon@iver.com',
-					password: '#29 stratford apts'
+					password: '#29 stratford apts',
+					wishlists: []
 				},
 				{
 					email: 'kanye@west.com',
-					password: 'wavvy'
+					password: 'wavvy',
+					wishlists: []
 				}]
 	//
 // 
@@ -72,6 +75,9 @@ function tearDownDb(){
 describe('USERS API RESOURCE', () => {
 	before(() => {
 		runServer(TEST_DATABASE_URL)
+	})
+	beforeEach(() => {
+		return seedWishlistDatabase()
 	})
 	afterEach(() => {
 		return tearDownDb()
@@ -261,7 +267,7 @@ describe('USERS API RESOURCE', () => {
 						.send(person)
 						.then(res => {
 							let userId = res.body.user.id
-							updateUser['id'] = userId
+							updateUser['userId'] = userId
 							return agent.put(`/users/${userId}/add/${wishlistId}`)
 								.send(updateUser)
 								.then(_res => {
@@ -275,6 +281,7 @@ describe('USERS API RESOURCE', () => {
 
 		it('should remove wishlist id from wishlist array', () => {
 			seedWishlistDatabase()
+
 			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
 			let agent = chai.request.agent(app)
 			let wishlistId;
@@ -283,12 +290,13 @@ describe('USERS API RESOURCE', () => {
 
 			updateUser = {}
 
-			return chai.request(app)
-				.get('/wishlists')
-				.then(res => { //get wishlist id
-					wishlistId = res.body.wishlists[0].id
+			return Wishlists
+				.findOne()
+				.exec()
+				.then(list => { //get wishlist id
+					let wishlist = list.listRepr()
+					wishlistId = wishlist.id
 					updateUser['wishlistId'] = wishlistId
-
 					return chai.request(app)
 						.post('/users')
 						.send(person)
@@ -299,14 +307,14 @@ describe('USERS API RESOURCE', () => {
 				})
 				.then(res => { //add wishlist to user wishlists array
 					let userId = res.body.user.id
-					updateUser['id'] = userId
+					updateUser['userId'] = userId
 					return agent.put(`/users/${userId}/add/${wishlistId}`)
 						.send(updateUser)
 				})
 				.then(res => { //delete wishlist from array
-					res.body.wishlists.should.include(updateUser.wishlistId)
+					res.body.wishlists.should.include(updateUser.wishlistId.toString())
 					
-					return agent.put(`/users/${updateUser.id}/delete/${updateUser.wishlistId}`)
+					return agent.put(`/users/${updateUser.userId}/delete/${updateUser.wishlistId}`)
 						.send(updateUser)
 				})
 				.then(_res => { //ensure wishlist is no longer in user wishlists array
@@ -324,25 +332,94 @@ describe('USERS API RESOURCE', () => {
 
 	describe('DELETE endpoint', () => {
 		it('should delete account', () => {
+					let res;
+					let agent = chai.request.agent(app)
+					let user = usersArray[Math.floor(Math.random() * usersArray.length)]
+					return chai.request(app)
+						.post('/users')
+						.send(user)
+						.then(_res => {
+							return agent.post('/users/login')
+								.send(user)
+								.then(_res => {
+									res = _res
+									
+									return agent.delete(`/users/${res.body.user.id}`)
+										.then(_res => {
+											res = _res
+											res.should.have.status(204)
+										})
+								})
+						})			
+		})
+
+		it('should delete account and all associated wishlists', () => {		
 			let res;
 			let agent = chai.request.agent(app)
 			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
-			return chai.request(app)
-				.post('/users')
-				.send(user)
-				.then(_res => {
-					return agent.post('/users/login')
+			let listIds;
+			let userId;
+			
+			return Wishlists
+				.find()
+				.exec()
+				.then(lists => {
+					let wishlists = lists.map(list => list.listRepr())
+					
+					listIds = [wishlists[0].id, wishlists[1].id, wishlists[2].id]
+					return listIds
+				})
+				.then(listIds => {
+					return chai.request(app)
+						.post('/users')
 						.send(user)
-						.then(_res => {
-							res = _res
-							
-							return agent.delete(`/users/${res.body.user.id}`)
-								.then(_res => {
-									res = _res
-									res.should.have.status(204)
-								})
+				})
+				.then(_res => {
+					_res.should.have.status(201)
+					return agent.post('/users/login')
+						.send({
+							email: user.email,
+							password: user.password
+						})			
+				})
+				.then(res => {
+					userId = res.body.user.id
+					return agent.put(`/users/${userId}/add/${listIds[0]}`)
+						.send({
+							userId: userId,
+							wishlistId: listIds[0]
 						})
-				})			
+				})
+				.then(res => {
+					return agent.put(`/users/${userId}/add/${listIds[1]}`)
+						.send({
+							userId: userId,
+							wishlistId: listIds[1]
+						})				
+				})
+				.then(res => {
+					return agent.put(`/users/${userId}/add/${listIds[2]}`)
+						.send({
+							userId: userId,
+							wishlistId: listIds[2]
+						})				
+				})
+				.then(_res => {
+					res = _res
+					return agent.delete(`/users/${userId}`)
+				})
+				.then(_res => {
+					res = _res
+					res.should.have.status(204)
+
+					return Wishlists
+						.find([{id: listIds[0]}, {id: listIds[1]}, {id: listIds[2]}])
+						.exec()
+				})
+				.then(lists => {
+					lists.should.be.a('array')
+					lists.should.have.length(3)
+				})
 		})
 	})
 })

@@ -8,12 +8,14 @@ mongoose.Promise = global.Promise
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
+const {passport, authorize} = require('../auth')
 
 const {Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
-wishlistRouter.get('/', (req, res) => {
+wishlistRouter.get('/', authorize, (req, res) => {
+	
 	Wishlists
 		.find()
 		.exec()
@@ -47,7 +49,7 @@ wishlistRouter.get('/:listId', (req, res) => {
 });
 
 
-wishlistRouter.post('/', (req, res) => {
+wishlistRouter.post('/', authorize, (req, res) => {
 	Wishlists
 		.create({
 			title: req.body.title,
