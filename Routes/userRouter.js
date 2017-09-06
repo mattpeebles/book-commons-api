@@ -101,10 +101,10 @@ userRouter.post('/', (req, res) => {
 })
 
 userRouter.put('/:userId', authorize, (req, res) => {
-	if(!(req.params.userId === req.body.id)){
+	if(!(req.params.userId === req.body.userId)){
 		const message = (
-		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.id}) must match`);
+		  `Request path id (${req.params.userId}) and request body userId ` +
+		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});		
 	}
@@ -173,7 +173,7 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
-		  `Request path id (${req.params.userId}) and request body id ` +
+		  `Request path id (${req.params.userId}) and request body userId ` +
 		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});	

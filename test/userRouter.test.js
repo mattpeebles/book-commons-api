@@ -42,24 +42,6 @@ const {Users, Wishlists} = require('../models')
 		}
 	//
 
-
-	//User database
-		const usersArray = [{
-					email: 'frank@ocean.com',
-					password: 'chanel',
-					wishlists: []
-				},
-				{
-					email: 'bon@iver.com',
-					password: '#29 stratford apts',
-					wishlists: []
-				},
-				{
-					email: 'kanye@west.com',
-					password: 'wavvy',
-					wishlists: []
-				}]
-	//
 // 
 
 function tearDownDb(){
@@ -73,17 +55,82 @@ function tearDownDb(){
 
 
 describe('USERS API RESOURCE', () => {
+	let wishlistIds = [];
+	let user;
+	let userId;
+	let agent = chai.request.agent(app)
+
+	const usersArray = [{
+			email: 'frank@ocean.com',
+			password: 'chanel',
+			wishlists: []
+		},
+		{
+			email: 'bon@iver.com',
+			password: '#29 stratford apts',
+			wishlists: []
+		},
+		{
+			email: 'kanye@west.com',
+			password: 'wavvy',
+			wishlists: []
+		}]
+
 	before(() => {
-		runServer(TEST_DATABASE_URL)
+		return runServer(TEST_DATABASE_URL)
 	})
 	beforeEach(() => {
 		return seedWishlistDatabase()
+	})
+	beforeEach(() => {
+			//set up and log agent in to do authorized tests
+		wishlistIds = []
+
+		user = usersArray[Math.floor(Math.random() * usersArray.length)]
+
+		return Wishlists
+			.find()
+			.exec()
+			.then(lists => {
+				lists.forEach(list => {
+					wishlistIds.push(list.id)
+				})
+
+				user.wishlists = wishlistIds
+
+				return chai.request(app)
+						.post('/users')
+						.send(user)
+						.then(_res => {
+							_res.should.have.status(201)
+							return agent.post('/users/login')
+								.send({
+									email: user.email,
+									password: user.password
+								})			
+						})
+						.then(_res => {
+							return agent.get(`/users/me`)
+						})
+						.then(res => {
+							userId = res.body.user.id
+							console.log(`${user.email} is logged in`)
+
+						})
+			})
+	})
+	afterEach(() => {
+		return chai.request(app)
+			.get('/users/logout')
+			.then(() => {
+				console.log(`Agent logged out`)
+			})
 	})
 	afterEach(() => {
 		return tearDownDb()
 	})
 	after(() => {
-		console.info('Closing test database')
+		console.log('Closing test server')
 		return closeServer()
 	})
 
@@ -91,41 +138,38 @@ describe('USERS API RESOURCE', () => {
 		it('should login user', () => {
 			let res;
 			let agent = chai.request.agent(app)
-			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
-			return chai.request(app)
-				.post('/users')
-				.send(user)
-				.then(_res => {
+			
+				//prep
+				//logs user out
+			return agent.get('/users/logout')
+				.then(() => {
+					
+						//test
+						//logs user in
 					return agent.post('/users/login')
-						.send(user)
-						.then(_res => {
-							res = _res
-							res.should.have.status(201)
-							res.body.message.should.be.equal('Logged in')
+						.send({
+							email: user.email,
+							password: user.password
 						})
+				})
+				.then(_res => {
+					res = _res
+					res.should.have.status(201)
+					res.body.message.should.be.equal('Logged in')
 				})
 		})
 
 		it('should logout user', () => {
 			let res;
-			let agent = chai.request.agent(app)
-			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
 			
+				//test
+				//logs user out
 			return chai.request(app)
-				.post('/users')
-				.send(user)
+				.get('/users/logout')
 				.then(_res => {
-					return agent.post('/users/login')
-						.send(user)
-						.then(_res => {
-							return chai.request(app)
-								.get('/users/logout')
-								.then(_res => {
-									res = _res
-									res.should.have.status(200)
-									res.body.message.should.be.equal('Log out successful')
-								})
-						})
+					res = _res
+					res.should.have.status(200)
+					res.body.message.should.be.equal('Log out successful')
 				})
 		})
 	})
@@ -133,292 +177,188 @@ describe('USERS API RESOURCE', () => {
 	describe('GET endpoint', () => {
 
 		it('should return authorized user on GET', () => {
-			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
 			let res;
-			let agent = chai.request.agent(app)
+			
+				//test
+				//should return user profile
+			return agent.get('/users/me')
+				.then(_res => {
+					res = _res
 
-			return chai.request(app)
-				.post('/users')
-				.send(person)
-				.then(_res => {					
-					return agent.post('/users/login')
-						.send(person)
-						.then(_res => {
-							return agent.get('/users/me')
-								.then(_res => {
-									res = _res
-									let {user} = res.body
-
-									res.should.have.status(200)
-									res.should.be.json
-									user.id.should.be.a('string')
-									user.email.should.be.a('string')
-									user.email.should.be.equal(person.email)
-									user.wishlists.should.be.a('array')
-								})
-						})
+					res.should.have.status(200)
+					res.should.be.json
+					res.body.user.id.should.be.a('string')
+					res.body.user.email.should.be.a('string')
+					res.body.user.email.should.be.equal(user.email)
+					res.body.user.wishlists.should.be.a('array')
+					res.body.user.wishlists.should.deep.equal(user.wishlists)
 				})
 		})
 	})
 
 	describe('POST endpoint', () => {
 		it('should post a new user to database', () => {
-			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
+			let newUser = {
+				email: 'grimes@artangel.com',
+				password: 'butterfly',
+				wishlists: []
+			}
 			let res;
 
+				//test
 			return chai.request(app)
 				.post('/users')
-				.send(user)
+				.send(newUser)
 				.then(_res => {
 					res = _res
 					res.should.have.status(201)
-					res.body.email.should.be.equal(user.email)
+					res.body.email.should.be.equal(newUser.email)
 				})
 		})
 	})
 
 	describe('PUT endpoint', () => {
 		it('should update email', () => {
-			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
-			let agent = chai.request.agent(app)
 			let res;
-			let updateUser = {email: 'kendrick@lamar.com'}
-
-			return chai.request(app)
-				.post('/users')
-				.send(person)
-				.then(() => {
-					return agent.post('/users/login')
-						.send(person)
-						.then(res => {
-							let userId = res.body.user.id
-							updateUser['id'] = userId
-							return agent.put(`/users/${userId}`)
-								.send(updateUser)
-								.then(_res => {
-									res = _res
-									res.should.have.status(201)
-									res.body.email.should.be.equal(updateUser.email)
-								})
-						})
+			let updateUser = {
+				email: 'kendrick@lamar.com',
+				userId: userId
+			}	
+				//test
+				//update user email
+			return agent.put(`/users/${userId}`)
+				.send(updateUser)
+				.then(_res => {
+					res = _res
+					res.should.have.status(201)
+					res.body.email.should.be.equal(updateUser.email)
 				})
 		})
 
 		it('should update password', () => {
-			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
-			let agent = chai.request.agent(app)
 			let res;
-			let updateUser = {password: 'survive in america'}
+			let updateUser = {
+				password: 'survive in america', 
+				userId: userId
+			}
+						
+				//test
+				//update user password
+			return agent.put(`/users/${userId}`)
+				.send(updateUser)
+				.then(_res => {
+					res = _res
+					res.should.have.status(201)
+					res.body.message.should.be.equal('Password changed')
 
-				//create new user
-			return chai.request(app)
-				.post('/users')
-				.send(person)
+						//prep for test double check
+						//logout user to check that new password can login user
+					return chai.request(app)
+						.get('/users/logout')
+				})
 				.then(() => {
-					
-					return agent.post('/users/login')
-						.send(person)
-						.then(res => {
-							let userId = res.body.user.id
-							updateUser['id'] = userId
-								
-								//update user password
-							return agent.put(`/users/${userId}`)
-								.send(updateUser)
-								.then(_res => {
-									res = _res
-									res.should.have.status(201)
-									res.body.message.should.be.equal('Password changed')
 
-										//logout user to check that new password can login user
-									return chai.request(app)
-										.get('/users/logout')
-										.then(() => {
-											return agent.post('/users/login')
-												.send({
-													email: person.email,
-													password: updateUser.password
-												})
-												.then(res => {
-													res.should.have.status(201)
-													res.body.message.should.be.equal('Logged in')
-												})
-										})
-								})
+						//test double check
+						//should log user in with new password
+					return agent.post('/users/login')
+						.send({
+							email: user.email,
+							password: updateUser.password
+						})
+						.then(res => {
+							res.should.have.status(201)
+							res.body.message.should.be.equal('Logged in')
 						})
 				})
 		})
 
 		it('should add wishlist id to wishlist array', () => {
-			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
 			let wishlistId = faker.random.uuid()
-			let agent = chai.request.agent(app)
 			let res;
 
 			updateUser = {
+				userId: userId,
 				wishlistId: wishlistId
 			}
 
-			return chai.request(app)
-				.post('/users')
-				.send(person)
-				.then(() => {
-					return agent.post('/users/login')
-						.send(person)
-						.then(res => {
-							let userId = res.body.user.id
-							updateUser['userId'] = userId
-							return agent.put(`/users/${userId}/add/${wishlistId}`)
-								.send(updateUser)
-								.then(_res => {
-									res = _res
-									res.should.have.status(201)
-									res.body.wishlists.should.include(updateUser.wishlistId)
-								})
-						})
+				//test
+			return agent.put(`/users/${userId}/add/${wishlistId}`)
+				.send(updateUser)
+				.then(_res => {
+					res = _res
+					res.should.have.status(201)
+					res.body.wishlists.should.include(updateUser.wishlistId)
 				})
 		})
 
 		it('should remove wishlist id from wishlist array', () => {
-			seedWishlistDatabase()
 
-			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
-			let agent = chai.request.agent(app)
 			let wishlistId;
 
 			let res;
 
-			updateUser = {}
-
-			return Wishlists
-				.findOne()
-				.exec()
-				.then(list => { //get wishlist id
-					let wishlist = list.listRepr()
-					wishlistId = wishlist.id
-					updateUser['wishlistId'] = wishlistId
-					return chai.request(app)
-						.post('/users')
-						.send(person)
-				})
-				.then(() => {  //login
-					return agent.post('/users/login')
-						.send(person)
-				})
-				.then(res => { //add wishlist to user wishlists array
-					let userId = res.body.user.id
-					updateUser['userId'] = userId
-					return agent.put(`/users/${userId}/add/${wishlistId}`)
-						.send(updateUser)
-				})
-				.then(res => { //delete wishlist from array
-					res.body.wishlists.should.include(updateUser.wishlistId.toString())
+			updateUser = {
+				userId: userId,
+				wishlistId: user.wishlists[0]
+			}
 					
-					return agent.put(`/users/${updateUser.userId}/delete/${updateUser.wishlistId}`)
-						.send(updateUser)
-				})
-				.then(_res => { //ensure wishlist is no longer in user wishlists array
+				//test
+				//removes wishlist from user 
+			return agent.put(`/users/${updateUser.userId}/delete/${updateUser.wishlistId}`)
+				.send(updateUser)
+				.then(_res => { 
 					res = _res
 					res.should.have.status(201)
 					res.body.wishlists.should.not.include(updateUser.wishlistId)
+					
+						//test double check
+						//attempts to get wishlist
+						//ensures wishlist no longer exists in wishlist collection
 					return chai.request(app)
 						.get(`/wishlists/${updateUser.wishlistId}`)
 				})
-				.then(res => { //ensure wishlist no longer exists in wishlist collection
+				.then(res => { 
 					res.body.message.should.be.equal('Wishlist does not exist')
 				})
 		})
 	})
 
 	describe('DELETE endpoint', () => {
-		it('should delete account', () => {
-					let res;
-					let agent = chai.request.agent(app)
-					let user = usersArray[Math.floor(Math.random() * usersArray.length)]
-					return chai.request(app)
-						.post('/users')
-						.send(user)
-						.then(_res => {
-							return agent.post('/users/login')
-								.send(user)
-								.then(_res => {
-									res = _res
-									
-									return agent.delete(`/users/${res.body.user.id}`)
-										.then(_res => {
-											res = _res
-											res.should.have.status(204)
-										})
-								})
-						})			
+		it('should delete account', () => {				
+				//test	
+			return agent.delete(`/users/${userId}`)
+				.then(res => {
+					res.should.have.status(204)
+				})
 		})
 
 		it('should delete account and all associated wishlists', () => {		
 			let res;
-			let agent = chai.request.agent(app)
-			let user = usersArray[Math.floor(Math.random() * usersArray.length)]
-			let listIds;
-			let userId;
 			
-			return Wishlists
-				.find()
-				.exec()
-				.then(lists => {
-					let wishlists = lists.map(list => list.listRepr())
-					
-					listIds = [wishlists[0].id, wishlists[1].id, wishlists[2].id]
-					return listIds
-				})
-				.then(listIds => {
-					return chai.request(app)
-						.post('/users')
-						.send(user)
-				})
-				.then(_res => {
-					_res.should.have.status(201)
-					return agent.post('/users/login')
-						.send({
-							email: user.email,
-							password: user.password
-						})			
-				})
-				.then(res => {
-					userId = res.body.user.id
-					return agent.put(`/users/${userId}/add/${listIds[0]}`)
-						.send({
-							userId: userId,
-							wishlistId: listIds[0]
-						})
-				})
-				.then(res => {
-					return agent.put(`/users/${userId}/add/${listIds[1]}`)
-						.send({
-							userId: userId,
-							wishlistId: listIds[1]
-						})				
-				})
-				.then(res => {
-					return agent.put(`/users/${userId}/add/${listIds[2]}`)
-						.send({
-							userId: userId,
-							wishlistId: listIds[2]
-						})				
-				})
-				.then(_res => {
-					res = _res
-					return agent.delete(`/users/${userId}`)
-				})
+				//prep
+			return agent.delete(`/users/${userId}`)
 				.then(_res => {
 					res = _res
 					res.should.have.status(204)
 
+					
+						//test to check if wishlists were deleted by
+						//searching through wishlist database for ids
+						//associated with deleted user account
+					let findArgs = []
+
+						//creates arguments to pass into find, converts ids back into mongoose ids
+					user.wishlists.forEach(list => {
+						findArgs.push(new mongoose.Types.ObjectId( list ))
+					})
+
 					return Wishlists
-						.find([{id: listIds[0]}, {id: listIds[1]}, {id: listIds[2]}])
+						.find({'_id': {$in: findArgs}})
 						.exec()
 				})
 				.then(lists => {
 					lists.should.be.a('array')
-					lists.should.have.length(3)
+					lists.should.have.length(0)
 				})
 		})
 	})
