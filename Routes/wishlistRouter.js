@@ -16,8 +16,16 @@ wishlistRouter.use(jsonParser)
 
 wishlistRouter.get('/', authorize, (req, res) => {
 	
+	let wishlists = req.user.wishlists
+
+	let findArgs = []
+	
+	wishlists.forEach(list => {
+		findArgs.push(new mongoose.Types.ObjectId( list ))
+	})
+
 	Wishlists
-		.find()
+		.find({'_id': {$in: findArgs}})
 		.exec()
 		.then(wishlists => {
 			res.json({wishlists: 
@@ -63,10 +71,10 @@ wishlistRouter.post('/', authorize, (req, res) => {
 });
 
 wishlistRouter.put('/:listId', (req, res) => {
-	if (!(req.params.listId === req.body.id)){
+	if (!(req.params.listId === req.body.listId)){
 		const message = (
 		  `Request path listId (${req.params.listId}) and request body listId ` +
-		  `(${req.body.id}) must match`);
+		  `(${req.body.listId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});
 	}
@@ -82,15 +90,15 @@ wishlistRouter.put('/:listId', (req, res) => {
 	})
 
 	Wishlists
-		.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+		.findByIdAndUpdate(req.body.listId, {$set: toUpdate}, {new: true})
 		.then(wishlist => res.status(201).json(wishlist.listRepr()))
 });
 
 
 wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
-	if (!(req.params.listId === req.body.id)){
+	if (!(req.params.listId === req.body.listId)){
 		const message = (
-		  `Request path listId (${req.params.listId}) and request body id ` +
+		  `Request path listId (${req.params.listId}) and request body listId ` +
 		  `(${req.body.id}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});
@@ -116,7 +124,7 @@ wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 				}
 
 				Wishlists
-					.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+					.findByIdAndUpdate(req.body.listId, {$set: toUpdate}, {new: true})
 					.then(list => res.status(201).json(list.listRepr()))
 			}
 		})
@@ -124,9 +132,9 @@ wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 
 	//remove book from wishlist
 wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
-	if (!(req.params.listId === req.body.id)){
+	if (!(req.params.listId === req.body.listId)){
 		const message = (
-		  `Request path listId (${req.params.listId}) and request body id ` +
+		  `Request path listId (${req.params.listId}) and request body listId ` +
 		  `(${req.body.listId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});

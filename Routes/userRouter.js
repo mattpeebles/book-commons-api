@@ -83,10 +83,13 @@ userRouter.post('/', (req, res) => {
 		})
 		.then(hash => {
 
+			let wishlists = (req.body.wishlists !== undefined) ? req.body.wishlists : []
+
 			return Users
 				.create({
 					email: email,
 					password: hash,
+					wishlists: wishlists
 				})
 		})
 		.then(user => {
