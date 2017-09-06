@@ -93,7 +93,7 @@ function tearDownDb(){
 }
 
 
-describe('Ebook api resource', () => {
+describe('EBOOK API RESOURCE', () => {
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
 	})

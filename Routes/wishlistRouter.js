@@ -33,7 +33,13 @@ wishlistRouter.get('/:listId', (req, res) => {
 	Wishlists
 		.findById(req.params.listId)
 		.exec()
-		.then(list => res.json(list.listRepr()))
+		.then(list => {
+			if(list === null){
+				return res.json({message: `Wishlist does not exist`})
+			}
+
+			res.json(list.listRepr())
+		})
 		.catch(err => {
 			console.error(err)
 			res.status(500).json({message: 'Internal server error'})

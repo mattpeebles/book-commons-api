@@ -12,53 +12,51 @@ const faker = require('faker')
 
 const {TEST_DATABASE_URL} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Users} = require('../models')
+const {Users, Wishlists} = require('../models')
 
 // Test Database seed functions
+	//Wishlist database
+		function seedWishlistDatabase(){
+			console.info('creating test database of wishlists')
+			const seedData = []
 
-	
-	const usersArray = [{
-				email: 'frank@ocean.com',
-				password: 'chanel'
-			},
-			{
-				email: 'bon@iver.com',
-				password: 'stratford'
-			},
-			{
-				email: 'kanye@west.com',
-				password: 'wavvy'
-			}]
-
-	function seedUserDatabase(){
-		console.info('creating test database of users')
-		const seedData = []
-
-		for (let i = 1; i <= 3; i++){
-			seedData.push(generateUserData())
+			for (let i = 1; i <= 3; i++){
+				seedData.push(generateWishlistData())
+			}
+			return Wishlists.insertMany(seedData)
 		}
 
-		return Users.insertMany(seedData)
-	}
-
-	function generateUserData(){
-		return {
-			email: generateEmail(),
-			password: generatePassword()
+		function generateWishlistData(){
+			return {
+				title: generateTitle(),
+				items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
+			}
 		}
-	}
 
-	function generateEmail(){
-		return faker.internet.email()
-	}
+		function generateTitle(){
+			return faker.random.word()
+		}
 
-	function generatePassword(){
-		return faker.internet.password()
-	}
+		function generateItemId(){
+			return faker.random.uuid()
+		}
+	//
 
-	function generateWishlists(){
-		return faker.random.uuid()
-	}
+
+	//User database
+		const usersArray = [{
+					email: 'frank@ocean.com',
+					password: 'chanel'
+				},
+				{
+					email: 'bon@iver.com',
+					password: '#29 stratford apts'
+				},
+				{
+					email: 'kanye@west.com',
+					password: 'wavvy'
+				}]
+	//
 // 
 
 function tearDownDb(){
@@ -74,9 +72,6 @@ function tearDownDb(){
 describe('USERS API RESOURCE', () => {
 	before(() => {
 		runServer(TEST_DATABASE_URL)
-	})
-	beforeEach(() => {
-		return seedUserDatabase()
 	})
 	afterEach(() => {
 		return tearDownDb()
@@ -130,17 +125,6 @@ describe('USERS API RESOURCE', () => {
 	})
 
 	describe('GET endpoint', () => {
-
-		it('should return a list of all users', () => {
-			let res;
-			return chai.request(app)
-				.get('/users')
-				.then(_res => {
-					res = _res
-					res.should.have.status(200)
-					res.body.users.should.have.length.of.at.least(1)
-				})
-		})
 
 		it('should return authorized user on GET', () => {
 			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
@@ -290,32 +274,50 @@ describe('USERS API RESOURCE', () => {
 		})
 
 		it('should remove wishlist id from wishlist array', () => {
+			seedWishlistDatabase()
 			let person = usersArray[Math.floor(Math.random() * usersArray.length)]
-			let wishlistId = faker.random.uuid()
 			let agent = chai.request.agent(app)
+			let wishlistId;
+
 			let res;
 
-			updateUser = {
-				wishlistId: wishlistId
-			}
+			updateUser = {}
 
 			return chai.request(app)
-				.post('/users')
-				.send(person)
-				.then(() => {
+				.get('/wishlists')
+				.then(res => { //get wishlist id
+					wishlistId = res.body.wishlists[0].id
+					updateUser['wishlistId'] = wishlistId
+
+					return chai.request(app)
+						.post('/users')
+						.send(person)
+				})
+				.then(() => {  //login
 					return agent.post('/users/login')
 						.send(person)
-						.then(res => {
-							let userId = res.body.user.id
-							updateUser['id'] = userId
-							return agent.put(`/users/${userId}/delete/${wishlistId}`)
-								.send(updateUser)
-								.then(_res => {
-									res = _res
-									res.should.have.status(201)
-									res.body.wishlists.should.not.include(updateUser.wishlistId)
-								})
-						})
+				})
+				.then(res => { //add wishlist to user wishlists array
+					let userId = res.body.user.id
+					updateUser['id'] = userId
+					return agent.put(`/users/${userId}/add/${wishlistId}`)
+						.send(updateUser)
+				})
+				.then(res => { //delete wishlist from array
+					res.body.wishlists.should.include(updateUser.wishlistId)
+					
+					return agent.put(`/users/${updateUser.id}/delete/${updateUser.wishlistId}`)
+						.send(updateUser)
+				})
+				.then(_res => { //ensure wishlist is no longer in user wishlists array
+					res = _res
+					res.should.have.status(201)
+					res.body.wishlists.should.not.include(updateUser.wishlistId)
+					return chai.request(app)
+						.get(`/wishlists/${updateUser.wishlistId}`)
+				})
+				.then(res => { //ensure wishlist no longer exists in wishlist collection
+					res.body.message.should.be.equal('Wishlist does not exist')
 				})
 		})
 	})

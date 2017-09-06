@@ -5,7 +5,7 @@ const userRouter = express.Router()
 const mongoose = require('mongoose')
 mongoose.Promise = global.Promise
 
-const {Users} = require('../models')
+const {Users, Wishlists} = require('../models')
 
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
@@ -46,22 +46,6 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
 userRouter.get('/logout', (req, res) => {
 	req.logOut()
 	return res.status(200).json({message: 'Log out successful'})
-})
-
-
-userRouter.get('/', (req, res) => {
-	Users
-		.find()
-		.exec()
-		.then(users => {
-			res.json({
-				users: users.map(user => user.userRepr())
-			})
-		})
-		.catch(err => {
-			console.error(err)
-			res.status(500).json({message: 'Internal server error'})
-		})
 })
 
 userRouter.get('/me', authorize, (req, res) => {
@@ -186,9 +170,10 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 			return Users
 				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
 				.exec()
-				.then(user => {
-					res.status(201).json(user.userRepr())
-				})
+		})
+		.then(user => {
+			
+			res.status(201).json(user.userRepr())
 		})
 })
 
@@ -211,11 +196,16 @@ userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 
 			toUpdate['wishlists'] = wishlists
 
-			return Users
-				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+			return Wishlists
+				.findByIdAndRemove(req.params.listId)
 				.exec()
-				.then(user => {
-					res.status(201).json(user.userRepr())
+				.then(() => {
+				return Users
+					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+					.exec()
+					.then(user => {
+						res.status(201).json(user.userRepr())
+					})
 				})
 		})
 })
