@@ -1,3 +1,8 @@
+//Routes
+//Get all user wishlists, get particular wishlist, post new wishlist, update wishlist items adding ebook,
+//update wishlist items by removing ebook, update wishlist by changing title, and delete wishlist
+
+
 const express = require('express')
 const app = express()
 const wishlistRouter = express.Router()
@@ -8,14 +13,25 @@ mongoose.Promise = global.Promise
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
+const {passport, authorize} = require('../auth')
 
 const {Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
-wishlistRouter.get('/', (req, res) => {
+	//get all wishlists associated with logged in user
+wishlistRouter.get('/', authorize, (req, res) => {
+	
+	let wishlists = req.user.wishlists
+
+	let findArgs = []
+	
+	wishlists.forEach(list => {
+		findArgs.push(new mongoose.Types.ObjectId( list ))
+	})
+
 	Wishlists
-		.find()
+		.find({'_id': {$in: findArgs}})
 		.exec()
 		.then(wishlists => {
 			res.json({wishlists: 
@@ -28,24 +44,35 @@ wishlistRouter.get('/', (req, res) => {
 		})
 })
 
-
+	//get particular wishlist by id
 wishlistRouter.get('/:listId', (req, res) => {
 	Wishlists
 		.findById(req.params.listId)
 		.exec()
-		.then(list => res.json(list.listRepr()))
+		.then(list => {
+			if(list === null){
+				return res.json({message: `Wishlist does not exist`})
+			}
+
+			res.json(list.listRepr())
+		})
 		.catch(err => {
 			console.error(err)
 			res.status(500).json({message: 'Internal server error'})
 		})
 });
 
+	//post new wishlist, isolated from user wishlist array
+	//must subsequently call /users/:userId/add/:listId to
+	//succesfully add it to user
+wishlistRouter.post('/', authorize, (req, res) => {
+	
+	let items = (req.body.items !== undefined) ? req.body.items : []
 
-wishlistRouter.post('/', (req, res) => {
 	Wishlists
 		.create({
 			title: req.body.title,
-			items: []
+			items: items
 		})
 		.then(list => res.status(201).json(list.listRepr()))
 		.catch(err => {
@@ -54,8 +81,9 @@ wishlistRouter.post('/', (req, res) => {
 		})
 });
 
+	//update title of wishlist
 wishlistRouter.put('/:listId', (req, res) => {
-	if (!(req.params.listId === req.body.id)){
+	if (!(req.params.listId === req.body.listId)){
 		const message = (
 		  `Request path listId (${req.params.listId}) and request body listId ` +
 		  `(${req.body.listId}) must match`);
@@ -74,16 +102,16 @@ wishlistRouter.put('/:listId', (req, res) => {
 	})
 
 	Wishlists
-		.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+		.findByIdAndUpdate(req.body.listId, {$set: toUpdate}, {new: true})
 		.then(wishlist => res.status(201).json(wishlist.listRepr()))
 });
 
-
+	//add book id to wish list items array
 wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
-	if (!(req.params.listId === req.body.id)){
+	if (!(req.params.listId === req.body.listId)){
 		const message = (
-		  `Request path listId (${req.params.listId}) and request body id ` +
-		  `(${req.body.listId}) must match`);
+		  `Request path listId (${req.params.listId}) and request body listId ` +
+		  `(${req.body.id}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});
 	}
@@ -108,7 +136,7 @@ wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 				}
 
 				Wishlists
-					.findByIdAndUpdate(req.body.id, {$set: toUpdate}, {new: true})
+					.findByIdAndUpdate(req.body.listId, {$set: toUpdate}, {new: true})
 					.then(list => res.status(201).json(list.listRepr()))
 			}
 		})
@@ -116,6 +144,15 @@ wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 
 	//remove book from wishlist
 wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
+	if (!(req.params.listId === req.body.listId)){
+		const message = (
+		  `Request path listId (${req.params.listId}) and request body listId ` +
+		  `(${req.body.listId}) must match`);
+		console.error(message);
+		res.status(400).json({message: message});
+	}
+
+
 	Wishlists
 		.findById(req.params.listId)
 		.exec()
@@ -128,23 +165,7 @@ wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 			Wishlists
 				.findByIdAndUpdate(req.params.listId, {$set: updatedItems}, {new: true})
 				.then(list => {
-					
-					Wishlists
-						.find({items: {$in: [req.params.bookId]}})
-						.count()
-						.then(count => {
-							if(count == 0){
-								Ebooks
-									.findByIdAndRemove(req.params.bookId)
-									.then(() => {
-										console.log(`Ebook ${req.params.bookId} was removed from wishlist and deleted from database`)
-										res.status(204).end()
-									})
-							}
-
-							console.log(`Ebook ${req.params.bookId} was removed from wishlist`)
-							res.status(204).end()	
-					})
+					res.status(201).json({message: 'Ebook removed from wishlist', wishlist: list.listRepr()})
 				})
 		})
 })

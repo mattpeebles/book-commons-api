@@ -1,7 +1,6 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
-const should = chai.should()
-const expect = chai.expect()
+const {expect, should} = require('chai')
 
 chai.use(chaiHttp)
 
@@ -93,12 +92,58 @@ function tearDownDb(){
 }
 
 
-describe('Ebook api resource', () => {
+describe('EBOOK API RESOURCE', () => {
+	let wishlistIds = [];
+	let agent = chai.request.agent(app)
+
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
 	})
 	beforeEach(() => {
 		return seedEbookDatabase()
+	})
+	beforeEach(() => {
+		
+			//set up and log agent in to do authorized tests
+		wishlistIds = []
+		let user = {
+			email: 'frank@ocean.com',
+			password: 'chanel',
+			wishlists: wishlistIds
+		}
+
+		return Wishlists
+			.find()
+			.exec()
+			.then(lists => {
+
+					//get wishlists ids into variable that can be accessed by all tests
+				lists.forEach(list => {
+					wishlistIds.push(list.id)
+				})
+
+				return chai.request(app)
+						.post('/users')
+						.send(user)
+						.then(_res => {
+							_res.should.have.status(201)
+							return agent.post('/users/login')
+								.send({
+									email: user.email,
+									password: user.password
+								})			
+						})
+						.then(_res => {
+							console.log(`${user.email} is logged in`)
+						})
+			})
+	})
+	afterEach(() => {
+		return chai.request(app)
+			.get('/users/logout')
+			.then(() => {
+				console.log(`Agent logged out`)
+			})
 	})
 	afterEach(() => {
 		return tearDownDb()
@@ -113,6 +158,7 @@ describe('Ebook api resource', () => {
 			let res;
 			return chai.request(app)
 				.get('/ebooks')
+				.send({message: 'hello'})
 				.then(_res => {
 					res = _res
 					res.should.have.status(200)
@@ -138,12 +184,58 @@ describe('Ebook api resource', () => {
 						})
 				})
 		})
+
+		it('should return all ebooks in wishlist', () => {
+			let bookIds = [];
+			let res;
+
+			
+				//prep
+				//get ebook ids and pass them to wishlist
+			return Ebooks
+				.find()
+				.exec()
+				.then(books => {
+
+					books.forEach(book => {
+						bookIds.push(book._id)
+					})
+
+						//prep
+						//post new wishlist with ebook ids in items
+					return agent.post('/wishlists')
+						.send({
+							title: 'Test',
+							items: bookIds
+						})
+
+				})
+				.then(res => {
+					let listId = res.body.id
+
+						//test
+						//get ebooks associated with wishlist
+					return chai.request(app)
+						.get(`/ebooks/wishlist/${listId}`)
+				})
+				.then(res => {
+					res.should.have.status(200)
+					res.should.be.json
+					res.body.ebooks.length.should.be.equal(bookIds.length)
+					res.body.ebooks.forEach((book, index) => {
+						book.id.should.be.equal(bookIds[index].toString())
+					})
+
+				})
+		})
 	})
 
 	describe('Post endpoint', () => {
 		it('should post new ebook to database', () => {
 			let ebook = generateEbookData()
 
+				//test
+				//add new ebook to database
 			return chai.request(app)
 				.post('/ebooks')
 				.send(ebook)
@@ -162,17 +254,51 @@ describe('Ebook api resource', () => {
 					res.body.locationUrl.should.be.equal(ebook.locationUrl)
 				})
 		})
+
+		it('should not post duplicate ebook to database', () => {
+			let ebook = generateEbookData()
+
+			return chai.request(app)
+				.post('/ebooks')
+				.send(ebook)
+				.then(res => {
+					res.should.have.status(201)
+					
+					return chai.request(app)
+						.post('/ebooks')
+						.send(ebook)
+						.then(res => {
+							res.should.have.status(200)
+							res.body.message.should.be.equal('Book exists in database already')
+							res.body.ebook.title.should.be.equal(ebook.title)
+							res.body.ebook.author.should.be.equal(ebook.author)
+							res.body.ebook.preview.should.be.equal(ebook.preview)
+							res.body.ebook.publishDate.should.be.equal(ebook.publishDate)
+							res.body.ebook.languages.should.deep.equal(ebook.languages)
+							res.body.ebook.pages.should.be.equal(ebook.pages)
+							res.body.ebook.formats.should.deep.equal(ebook.formats)
+							res.body.ebook.location.should.be.equal(ebook.location)
+							res.body.ebook.locationIcon.should.be.equal(ebook.locationIcon)
+							res.body.ebook.locationUrl.should.be.equal(ebook.locationUrl)
+						})
+				})
+		})
 	})
 
 	describe('Delete endpoint', () => {
 		it('should remove ebook from database', () => {
 			let bookId;
+			
+				//prep
+				//find an ebook id
 			return Ebooks
 				.findOne()
 				.exec()
 				.then(book => {
 					bookId = book.id
 
+						//test
+						//remove ebook from database
 					return chai.request(app)
 						.delete(`/ebooks/${bookId}`)
 				})

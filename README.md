@@ -1,18 +1,6 @@
 # Book Commons API
+[![Build Status](https://travis-ci.org/mattpeebles/book-commons-api.svg?branch=master)](https://travis-ci.org/mattpeebles/book-commons-api)
 
-<<<<<<< HEAD
-[TOC]
-
-##TODO
-
-### Ebook Route
-- [ ] determine if ebooks collection should be a permanent collection
-
-### Wishlist Route
-- [ ] Remove ebooks from database that only exist in delete wishlist
-
-### Users Route
-=======
 ## Table of Contents
 
 1. [Introduction](#introduction)
@@ -39,48 +27,40 @@
 
 ## Introduction <a name="introduction"></a>
 
+This is a RESTful API backend for *Book Commons*, a public domain ebook aggregator. There are three routes - ebooks, wishlists, users - that can be accessed. A description of each of the paths, requirements, and results are below. 
+
 ## TODO <a name="todo"></a>
 
 ### Ebook Route <a name="todoEbook"></a>
-- [ ] determine if ebooks collection should be a permanent collection
+:+1::tada::musical_note::confetti_ball:
 
 ### Wishlist Route <a name="todoWishlist"></a>
-- [ ] Remove ebooks from database that only exist in delete wishlist
+:+1::tada::musical_note::confetti_ball:
 
 ### Users Route <a name="todoUsers"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
-- [ ] On wishlist remove, delete wishlist from database
-- [ ] On account deletion, remove all wishlists, and all ebooks associated with account 
+:+1::tada::musical_note::confetti_ball:
 
 -----------
-<<<<<<< HEAD
-## Routes
-Ebook
-Wishlist
-User
-
-### Ebook
-
-#### Get
-=======
 ## Routes <a name="routes"></a>
 
 ### Ebook <a name="routeEbook"></a>
 
 #### Get <a name="ebookGet"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/ebooks`
+
 lists all ebooks
 
 `/ebooks/:bookId`
-displays ebook with id in parameter
 
-<<<<<<< HEAD
-#### Post
-=======
+displays particular ebook
+
+`/ebooks/wishlist/:listId`
+
+returns all ebooks associated with listId
+
 #### Post <a name="ebookPost"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/ebooks`
+
 adds an ebook with values
 - title
 - author
@@ -93,126 +73,84 @@ adds an ebook with values
 - locationIcon
 - locationUrl
 
-<<<<<<< HEAD
-#### Put
-There is not put route for ebooks. These ebook objects ideally and practically are immutable as they are pulled from outside databases.
-
-#### Delete
-=======
 #### Put <a name="ebookPut"></a>
 There is not a put route for ebooks. These ebook objects ideally and practically are immutable as they are pulled from outside databases.
 
 #### Delete <a name="ebookDelete"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/ebooks/:bookId`
-Removes ebook from 
+
+Removes ebook from database
 
 -----------
 
-<<<<<<< HEAD
-### Wishlist
-
-#### Get
-`/wishlists`
-lists all wishlists
-
-`/ebooks/:listId`
-displays list with id in parameter
-
-#### Post
-=======
 ### Wishlist <a name="routeWishlist"></a>
 
 #### Get <a name="wishlistGet"></a>
 `/wishlists`
-lists all wishlists
+
+lists all wishlists of user
 
 `/wishlists/:listId`
-displays list with id in parameter
+
+displays particular list
 
 #### Post <a name="wishlistPost"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/wishlists`
+
 adds a new wishlist with values
 - title
 - items
 
 
-<<<<<<< HEAD
-#### Put
-=======
 #### Put <a name="wishlistPut"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `wishlists/:listId`
-updates title of wishlist
-must have id of wishlist in request body
+
+- updates title of wishlist
+- must have id of wishlist in request body passed in as listId
 
 `/wishlists/:listId/add/:bookId`
-adds ebook id to items array
-must have id of wishlist in request body
-prevents duplicate ids from being added to same wishlist
+
+- adds ebook id to items array
+- must have id of wishlist in request body passed in as listId
+- prevents duplicate ids from being added to same wishlist
 
 `/wishlists/:listId/delete/:bookId`
-removes ebook from items array
-must have id of wishlist in request body
-if ebook only exists in this wishlist, then deletes ebook from database
+
+- removes ebook from items array
+- must have id of wishlist in request body passed in as listId
 
 
-<<<<<<< HEAD
-#### Delete
-=======
 #### Delete <a name="wishlistDelete"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/wishlists/:listId`
-Removes wishlist from database
-currently does not remove ebooks from database
+
+- Removes wishlist from database
+- currently does not remove ebooks from database
 
 ----------
-<<<<<<< HEAD
-### Users
-
-#### Login
-=======
 ### Users <a name="routeUsers"></a>
 
 #### Login <a name="usersLogin"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/users/login`
-*post request*
-allows user to login
-initiates session
 
-<<<<<<< HEAD
-#### Logout
-`/users/logout/
-=======
+- *post request*
+- allows user to login
+- initiates session
+
 #### Logout <a name="usersLogout"></a>
 `/users/logout/`
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
-*get request*
-logs user out
-ends session
 
-<<<<<<< HEAD
-#### Get
-`/users`
-lists all users
+- *get request*
+- logs user out
+- ends session
 
-`/users/me`
-displays info of logged in user
-
-#### Post
-=======
 #### Get <a name="usersGet"></a>
-`/users`
-lists all users
-
 `/users/me` 
+
 displays info of logged in user
 
 #### Post <a name="usersPost"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/users`
+
 ensures there are not duplicate emails in database before creating user
 and hashes password
 
@@ -221,29 +159,24 @@ adds a new user with values that are accessible in client
 - wishlists
 
 
-<<<<<<< HEAD
-#### Put
-=======
 #### Put <a name="usersPut"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `users/:userId`
-can update email and/or password of user
-must have id of user in request body
+
+- can update email and/or password of user
+- must have id of user in request body passed in as userId
 
 `/users/:userId/add/:listId`
-adds wishlist id to wishlists array
-must have id of user in request body
+
+- adds wishlist id to wishlists array
+- must have id of user in request body passed in as userId
 
 `users/:userId/delete/:listId`
-removes wishlist id from wishlist array
-must have id of user in request body
+- removes wishlist id from wishlist array
+- must have id of user in request body passed in as userId
 
 
-<<<<<<< HEAD
-#### Delete
-=======
 #### Delete <a name="usersDelete"></a>
->>>>>>> 722eedbb97ceaebee7449d870071ec9f28949e4d
 `/users/:userId`
-Removes user from database
-currently does not remove list or ebooks from database
+
+- Removes user from database
+- currently does not remove list or ebooks from database

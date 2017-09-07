@@ -1,8 +1,13 @@
+//Passport and Authorize middleware set up
+
 const passport = require('passport')
 const LocalStrategy = require('passport-local').Strategy
 const {Users} = require('./models')
 
 
+
+		//establishes local strategy for passport
+		//validates password goes alon with account
 passport.use(new LocalStrategy(
     {
         usernameField: 'email',
@@ -32,6 +37,9 @@ passport.use(new LocalStrategy(
 	}
 ))
 
+	//ensures user is logged in by checking
+	//to see if session was established
+	//by looking at req.user value
 function authorize(req, res, next){
 	if (req.user !== undefined){
 		next()
@@ -41,10 +49,12 @@ function authorize(req, res, next){
 	}
 }
 
+	//serializes user object into session
 passport.serializeUser(function(user, done) {
   done(null, user.id);
 });
 
+	//removes user object after session is concluded
 passport.deserializeUser(function(id, done) {
   Users.findById(id, function (err, user) {
     done(err, user);

@@ -1,3 +1,7 @@
+//Routes
+//login user, logout user, get user information, post new user, update users email or password,
+//update user wishlists by adding wishlist, update user wishlists by removing wishlists, delete user account
+
 const express = require('express')
 const app = express()
 const userRouter = express.Router()
@@ -5,7 +9,7 @@ const userRouter = express.Router()
 const mongoose = require('mongoose')
 mongoose.Promise = global.Promise
 
-const {Users} = require('../models')
+const {Users, Wishlists} = require('../models')
 
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
@@ -13,19 +17,8 @@ const jsonParser = bodyParser.json()
 const {passport, authorize} = require('../auth')
 
 userRouter.use(jsonParser)
-userRouter.use(jsonParser)
-userRouter.use(require('cookie-parser')())
-userRouter.use(require('express-session')({secret: 'hand again pig something its cent while occur', resave: true, saveUninitialized: true, cookie: { secure : false, maxAge : (4 * 60 * 60 * 1000)} }))
-userRouter.use(passport.initialize())
-userRouter.use(passport.session())
 
-
-// TODO
-// Refine remove wishlist, to delete wishlist and ebooks
-// Remove profile
-// 	then wishlists
-// 	then ebooks
-
+	//logs in user and initiates session
 userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
     passport.authenticate('local', function(err, user, info) {  
         if (err) return next(err);
@@ -43,31 +36,17 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
     })(req, res, next);
 });
 
+	//logs out user and ends session
 userRouter.get('/logout', (req, res) => {
 	req.logOut()
 	return res.status(200).json({message: 'Log out successful'})
 })
 
+	//return logged in user info
+userRouter.get('/me', authorize, (req, res) => res.json(req.user.userRepr()))
 
-userRouter.get('/', (req, res) => {
-	Users
-		.find()
-		.exec()
-		.then(users => {
-			res.json({
-				users: users.map(user => user.userRepr())
-			})
-		})
-		.catch(err => {
-			console.error(err)
-			res.status(500).json({message: 'Internal server error'})
-		})
-})
 
-userRouter.get('/me', authorize, (req, res) => {
-	res.json({user: req.user.userRepr()})
-})
-
+	//adds a new user with a non-duplicate email
 userRouter.post('/', (req, res) => {
 	if (!req.body){
 		return res.status(400).json({message: 'No request body'})
@@ -109,10 +88,14 @@ userRouter.post('/', (req, res) => {
 			return Users.hashPassword(password)
 		})
 		.then(hash => {
+
+			let wishlists = (req.body.wishlists !== undefined) ? req.body.wishlists : []
+
 			return Users
 				.create({
 					email: email,
-					password: hash
+					password: hash,
+					wishlists: wishlists
 				})
 		})
 		.then(user => {
@@ -122,12 +105,14 @@ userRouter.post('/', (req, res) => {
 			res.status(500).json({message: 'Internal server error'})
 		})
 })
-
+	
+	//updates email or password, password is hashed before
+	//given to user object
 userRouter.put('/:userId', authorize, (req, res) => {
-	if(!(req.params.userId === req.body.id)){
+	if(!(req.params.userId === req.body.userId)){
 		const message = (
-		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.id}) must match`);
+		  `Request path id (${req.params.userId}) and request body userId ` +
+		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});		
 	}
@@ -161,11 +146,13 @@ userRouter.put('/:userId', authorize, (req, res) => {
 		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 
+
+	//adds non duplicate wishlist id to wishlists array in user object
 userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
-	if(!(req.params.userId === req.body.id)){
+	if(!(req.params.userId === req.body.userId)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.id}) must match`);
+		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});	
 	}
@@ -186,17 +173,19 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 			return Users
 				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
 				.exec()
-				.then(user => {
-					res.status(201).json(user.userRepr())
-				})
+		})
+		.then(user => {
+			
+			res.status(201).json(user.userRepr())
 		})
 })
 
+	//removes wishlist id from wishlists array in user object
 userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
-	if(!(req.params.userId === req.body.id)){
+	if(!(req.params.userId === req.body.userId)){
 		const message = (
-		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.id}) must match`);
+		  `Request path id (${req.params.userId}) and request body userId ` +
+		  `(${req.body.userId}) must match`);
 		console.error(message);
 		res.status(400).json({message: message});	
 	}
@@ -211,19 +200,51 @@ userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 
 			toUpdate['wishlists'] = wishlists
 
-			return Users
-				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+			return Wishlists
+				.findByIdAndRemove(req.params.listId)
 				.exec()
-				.then(user => {
-					res.status(201).json(user.userRepr())
+				.then(() => {
+				return Users
+					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+					.exec()
+					.then(user => {
+						res.status(201).json(user.userRepr())
+					})
 				})
 		})
 })
 
+
+	//deletes account and all related wishlists
 userRouter.delete('/:userId', authorize, (req, res) => {
 	Users
-		.findByIdAndRemove(req.params.userId)
+		.findById(req.params.userId)
 		.exec()
+		.then(user => {
+			let wishlists = user.wishlists
+
+			let findArgs = []
+
+				//creates arguments to pass into find, converts ids back into mongoose ids
+			wishlists.forEach(list => {
+				findArgs.push(new mongoose.Types.ObjectId( list ))
+			})
+
+			Wishlists
+				.find({'_id': {$in: findArgs}})
+				.remove()
+				.exec()
+				.then(lists => {
+					console.log('All user wishlists have been deleted')
+				})
+
+			return user
+		})
+		.then(() => {
+			Users
+				.findByIdAndRemove(req.params.userId)
+				.exec()
+		})
 		.then(() => {
 			console.log(`Account ${req.params.userId} was deleted`)
 			res.status(204).end()
