@@ -1,4 +1,5 @@
 # Book Commons API
+[![Build Status](https://travis-ci.org/mattpeebles/book-commons-api.svg?branch=master)](https://travis-ci.org/mattpeebles/book-commons-api)
 
 ## Table of Contents
 
@@ -26,7 +27,7 @@
 
 ## Introduction <a name="introduction"></a>
 
-This is the API backend for *Book Commons*, a public domain ebook aggregator.
+This is a RESTful API backend for *Book Commons*, a public domain ebook aggregator. There are three routes - ebooks, wishlists, users - that can be accessed. A description of each of the paths, requirements, and results are below. 
 
 ## TODO <a name="todo"></a>
 
@@ -34,13 +35,10 @@ This is the API backend for *Book Commons*, a public domain ebook aggregator.
 :+1::tada::musical_note::confetti_ball:
 
 ### Wishlist Route <a name="todoWishlist"></a>
-- [ ] On wishlist add, prevent duplicate wishlist titles from being added
-- [x] On get wishlists, return only lists from the user
+:+1::tada::musical_note::confetti_ball:
 
 ### Users Route <a name="todoUsers"></a>
 :+1::tada::musical_note::confetti_ball:
-- [x] On wishlist remove, delete wishlist from database
-- [x] On account deletion, remove all wishlists
 
 -----------
 ## Routes <a name="routes"></a>

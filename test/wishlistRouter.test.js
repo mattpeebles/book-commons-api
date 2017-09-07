@@ -145,6 +145,7 @@ describe('WISHLIST API RESOURCE', () => {
 			.find()
 			.exec()
 			.then(lists => {
+					//send wishlist ids into array that is accessible by all tests
 				lists.forEach(list => {
 					wishlistIds.push(list.id)
 				})
@@ -257,7 +258,7 @@ describe('WISHLIST API RESOURCE', () => {
 				.then(res => {
 					res.should.have.status(201)
 
-						//test check
+						//test double check
 						//get same wishlist to see if it's been updated
 					return agent.get(`/wishlists/${wishlistId}`)
 				})

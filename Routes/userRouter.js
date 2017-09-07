@@ -1,3 +1,7 @@
+//Routes
+//login user, logout user, get user information, post new user, update users email or password,
+//update user wishlists by adding wishlist, update user wishlists by removing wishlists, delete user account
+
 const express = require('express')
 const app = express()
 const userRouter = express.Router()
@@ -14,7 +18,7 @@ const {passport, authorize} = require('../auth')
 
 userRouter.use(jsonParser)
 
-
+	//logs in user and initiates session
 userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
     passport.authenticate('local', function(err, user, info) {  
         if (err) return next(err);
@@ -32,15 +36,17 @@ userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
     })(req, res, next);
 });
 
+	//logs out user and ends session
 userRouter.get('/logout', (req, res) => {
 	req.logOut()
 	return res.status(200).json({message: 'Log out successful'})
 })
 
-userRouter.get('/me', authorize, (req, res) => {
-	res.json({user: req.user.userRepr()})
-})
+	//return logged in user info
+userRouter.get('/me', authorize, (req, res) => res.json(req.user.userRepr()))
 
+
+	//adds a new user with a non-duplicate email
 userRouter.post('/', (req, res) => {
 	if (!req.body){
 		return res.status(400).json({message: 'No request body'})
@@ -99,7 +105,9 @@ userRouter.post('/', (req, res) => {
 			res.status(500).json({message: 'Internal server error'})
 		})
 })
-
+	
+	//updates email or password, password is hashed before
+	//given to user object
 userRouter.put('/:userId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
@@ -138,6 +146,8 @@ userRouter.put('/:userId', authorize, (req, res) => {
 		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 
+
+	//adds non duplicate wishlist id to wishlists array in user object
 userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
@@ -170,6 +180,7 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 		})
 })
 
+	//removes wishlist id from wishlists array in user object
 userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
@@ -203,6 +214,8 @@ userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 		})
 })
 
+
+	//deletes account and all related wishlists
 userRouter.delete('/:userId', authorize, (req, res) => {
 	Users
 		.findById(req.params.userId)

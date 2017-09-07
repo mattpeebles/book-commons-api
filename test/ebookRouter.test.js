@@ -116,6 +116,8 @@ describe('EBOOK API RESOURCE', () => {
 			.find()
 			.exec()
 			.then(lists => {
+
+					//get wishlists ids into variable that can be accessed by all tests
 				lists.forEach(list => {
 					wishlistIds.push(list.id)
 				})
@@ -210,6 +212,9 @@ describe('EBOOK API RESOURCE', () => {
 				})
 				.then(res => {
 					let listId = res.body.id
+
+						//test
+						//get ebooks associated with wishlist
 					return chai.request(app)
 						.get(`/ebooks/wishlist/${listId}`)
 				})
@@ -229,6 +234,8 @@ describe('EBOOK API RESOURCE', () => {
 		it('should post new ebook to database', () => {
 			let ebook = generateEbookData()
 
+				//test
+				//add new ebook to database
 			return chai.request(app)
 				.post('/ebooks')
 				.send(ebook)
@@ -281,12 +288,17 @@ describe('EBOOK API RESOURCE', () => {
 	describe('Delete endpoint', () => {
 		it('should remove ebook from database', () => {
 			let bookId;
+			
+				//prep
+				//find an ebook id
 			return Ebooks
 				.findOne()
 				.exec()
 				.then(book => {
 					bookId = book.id
 
+						//test
+						//remove ebook from database
 					return chai.request(app)
 						.delete(`/ebooks/${bookId}`)
 				})

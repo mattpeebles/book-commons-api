@@ -92,6 +92,7 @@ describe('USERS API RESOURCE', () => {
 			.find()
 			.exec()
 			.then(lists => {
+					//get all wishlist ids into a variable accessible to all tests
 				lists.forEach(list => {
 					wishlistIds.push(list.id)
 				})
@@ -113,7 +114,8 @@ describe('USERS API RESOURCE', () => {
 							return agent.get(`/users/me`)
 						})
 						.then(res => {
-							userId = res.body.user.id
+								//get user id into var that can be accessible to all tests
+							userId = res.body.id
 							console.log(`${user.email} is logged in`)
 
 						})
@@ -187,11 +189,11 @@ describe('USERS API RESOURCE', () => {
 
 					res.should.have.status(200)
 					res.should.be.json
-					res.body.user.id.should.be.a('string')
-					res.body.user.email.should.be.a('string')
-					res.body.user.email.should.be.equal(user.email)
-					res.body.user.wishlists.should.be.a('array')
-					res.body.user.wishlists.should.deep.equal(user.wishlists)
+					res.body.id.should.be.a('string')
+					res.body.email.should.be.a('string')
+					res.body.email.should.be.equal(user.email)
+					res.body.wishlists.should.be.a('array')
+					res.body.wishlists.should.deep.equal(user.wishlists)
 				})
 		})
 	})

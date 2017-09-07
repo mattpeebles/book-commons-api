@@ -62,11 +62,6 @@ function closeServer(){
 	})
 }
 
-app.get('/api/*', (req, res) => {
-	res.json({ok: true})
-})
-
-
 if (require.main === module) {
 	runServer().catch(err => console.error(err))
 }

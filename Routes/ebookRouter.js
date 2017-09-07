@@ -1,5 +1,5 @@
 //Routes
-//Get all ebooks, get particular ebook, post ebook, and delete ebook
+//Get all ebooks, get particular ebook, get all ebooks in wishlist, post ebook, and delete ebook
 
 const express = require('express')
 const app = express()
@@ -17,9 +17,8 @@ const {Wishlists, Ebooks} = require('../models')
 
 ebookRouter.use(jsonParser)
 
+	//get all ebooks in database
 ebookRouter.get('/', (req, res) => {
-	console.log(req.body.message)
-
 	Ebooks
 		.find()
 		.exec()
@@ -33,7 +32,8 @@ ebookRouter.get('/', (req, res) => {
 			res.status(500).json({message: 'Internal service error'})
 		})
 })
-
+	
+	//get particular ebook by id
 ebookRouter.get('/:bookId', (req, res) => {
 	Ebooks
 		.findById(req.params.bookId)
@@ -76,6 +76,7 @@ ebookRouter.get('/wishlist/:listId', (req, res) => {
 		})
 })
 
+	//add new ebook to database, prevents duplicates by checking title, pages, and database it was pulled from
 ebookRouter.post('/', (req, res) => {
 	Ebooks
 		.find({title: req.body.title, pages: req.body.pages, location: req.body.location})
@@ -120,7 +121,8 @@ ebookRouter.post('/', (req, res) => {
 			}
 		})
 })
-
+	
+	//removes ebook from database
 ebookRouter.delete('/:bookId', (req, res) => {
 	Ebooks
 		.findByIdAndRemove(req.params.bookId)

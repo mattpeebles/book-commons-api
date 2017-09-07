@@ -1,3 +1,8 @@
+//Routes
+//Get all user wishlists, get particular wishlist, post new wishlist, update wishlist items adding ebook,
+//update wishlist items by removing ebook, update wishlist by changing title, and delete wishlist
+
+
 const express = require('express')
 const app = express()
 const wishlistRouter = express.Router()
@@ -14,6 +19,7 @@ const {Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
+	//get all wishlists associated with logged in user
 wishlistRouter.get('/', authorize, (req, res) => {
 	
 	let wishlists = req.user.wishlists
@@ -38,7 +44,7 @@ wishlistRouter.get('/', authorize, (req, res) => {
 		})
 })
 
-
+	//get particular wishlist by id
 wishlistRouter.get('/:listId', (req, res) => {
 	Wishlists
 		.findById(req.params.listId)
@@ -56,7 +62,9 @@ wishlistRouter.get('/:listId', (req, res) => {
 		})
 });
 
-
+	//post new wishlist, isolated from user wishlist array
+	//must subsequently call /users/:userId/add/:listId to
+	//succesfully add it to user
 wishlistRouter.post('/', authorize, (req, res) => {
 	
 	let items = (req.body.items !== undefined) ? req.body.items : []
@@ -73,6 +81,7 @@ wishlistRouter.post('/', authorize, (req, res) => {
 		})
 });
 
+	//update title of wishlist
 wishlistRouter.put('/:listId', (req, res) => {
 	if (!(req.params.listId === req.body.listId)){
 		const message = (
@@ -97,7 +106,7 @@ wishlistRouter.put('/:listId', (req, res) => {
 		.then(wishlist => res.status(201).json(wishlist.listRepr()))
 });
 
-
+	//add book id to wish list items array
 wishlistRouter.put('/:listId/add/:bookId', (req, res) => {
 	if (!(req.params.listId === req.body.listId)){
 		const message = (
