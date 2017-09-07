@@ -15,7 +15,7 @@ const jsonParser = bodyParser.json()
 
 const {passport, authorize} = require('../auth')
 
-const {Wishlists, Ebooks} = require('../models')
+const {Users, Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
@@ -66,7 +66,7 @@ wishlistRouter.get('/:listId', (req, res) => {
 	//must subsequently call /users/:userId/add/:listId to
 	//succesfully add it to user
 wishlistRouter.post('/', authorize, (req, res) => {
-	
+
 	let items = (req.body.items !== undefined) ? req.body.items : []
 
 	Wishlists
@@ -74,7 +74,23 @@ wishlistRouter.post('/', authorize, (req, res) => {
 			title: req.body.title,
 			items: items
 		})
-		.then(list => res.status(201).json(list.listRepr()))
+		.then(list => {
+			let jsonList = list.listRepr()
+
+			let wishlistsArray = [...req.user.wishlists, jsonList.id]
+			
+			let updateWishlists = {
+				wishlists: wishlistsArray
+			}
+
+				//updates logged in user with new wishlist id
+			Users
+				.findByIdAndUpdate(req.user.id, {$set: updateWishlists}, {new: true})
+				.exec()
+				.then(user => {
+					res.status(201).json({user: user.userRepr(), wishlist: jsonList})
+				})
+		})
 		.catch(err => {
 			console.error(err)
 			return res.status(500).json({message: 'Internal server error'})
@@ -172,12 +188,24 @@ wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 
 
 
-wishlistRouter.delete('/:listId', (req, res) => {
-	Wishlists
-		.findByIdAndRemove(req.params.listId)
+wishlistRouter.delete('/:listId', authorize, (req, res) => {
+	
+	let wishlistsArray = req.user.wishlists.filter(list => list !== req.params.listId)
+
+	let updateUser = {
+		wishlists: wishlistsArray
+	}
+
+	Users
+		.findByIdAndUpdate(req.user.id, {$set: updateUser}, {new: true})
+		.exec()
 		.then(() => {
-			console.log(`${req.params.listId} Wishlist was removed`)
-			res.status(204).end()
+			Wishlists
+				.findByIdAndRemove(req.params.listId)
+				.then(() => {
+					console.log(`${req.params.listId} Wishlist was removed`)
+					res.status(204).end()
+				})
 		})
 });
 

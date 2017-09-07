@@ -189,7 +189,6 @@ describe('EBOOK API RESOURCE', () => {
 			let bookIds = [];
 			let res;
 
-			
 				//prep
 				//get ebook ids and pass them to wishlist
 			return Ebooks
@@ -211,7 +210,7 @@ describe('EBOOK API RESOURCE', () => {
 
 				})
 				.then(res => {
-					let listId = res.body.id
+					let listId = res.body.wishlist.id
 
 						//test
 						//get ebooks associated with wishlist

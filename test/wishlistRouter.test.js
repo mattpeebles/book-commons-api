@@ -234,9 +234,10 @@ describe('WISHLIST API RESOURCE', () => {
 				.then(_res => {
 					res = _res
 					res.should.have.status(201)
-					res.body.title.should.be.equal(wishlist.title)
-					res.body.title.should.be.a('string')
-					res.body.items.should.deep.equal([])
+					res.body.user.wishlists.should.include(res.body.wishlist.id)
+					res.body.wishlist.title.should.be.equal(wishlist.title)
+					res.body.wishlist.title.should.be.a('string')
+					res.body.wishlist.items.should.deep.equal([])
 				})
 		})
 	});
@@ -364,11 +365,21 @@ describe('WISHLIST API RESOURCE', () => {
 
 
 	describe('Delete endpoint', () => {
-		it('should remove wishlist', () => {
-			return chai.request(app)
-				.delete(`/wishlists/${wishlistIds[Math.floor(Math.random() * wishlistIds.length)]}`)
+		it('should remove wishlist from collection and from user object', () => {
+			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			
+				//test
+				//removes wishlist from wishlist collection
+			return agent.delete(`/wishlists/${wishlistId}`)
 				.then(res => {
 					res.should.have.status(204)
+
+						//test
+						//ensures that wishlist id was removed from user object
+					return agent.get('/users/me')
+						.then(res => {
+							res.body.wishlists.should.not.include(wishlistId)
+						})
 				})
 		});
 

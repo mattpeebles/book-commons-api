@@ -101,6 +101,8 @@ adds a new wishlist with values
 - title
 - items
 
+adds wishlist id to users wishlist array automatically
+
 
 #### Put <a name="wishlistPut"></a>
 `wishlists/:listId`
@@ -167,10 +169,12 @@ adds a new user with values that are accessible in client
 
 `/users/:userId/add/:listId`
 
+- *post `/wishlist` now adds the wishlist to user automatically*
 - adds wishlist id to wishlists array
 - must have id of user in request body passed in as userId
 
 `users/:userId/delete/:listId`
+- *delete `/wishlist/:listId` now removes the wishlist from user automatically*
 - removes wishlist id from wishlist array
 - must have id of user in request body passed in as userId
 

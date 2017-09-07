@@ -147,6 +147,7 @@ userRouter.put('/:userId', authorize, (req, res) => {
 })
 
 
+	//superfluous wishlist add handles this action
 	//adds non duplicate wishlist id to wishlists array in user object
 userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
@@ -180,6 +181,7 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 		})
 })
 
+	//superfluous wishlist delete handles this action
 	//removes wishlist id from wishlists array in user object
 userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
