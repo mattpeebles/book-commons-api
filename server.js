@@ -12,6 +12,12 @@ const ebookRouter = require('./Routes/ebookRouter')
 
 const {passport, authorize} = require('./auth')
 
+app.use(
+	cors({
+        origin: CLIENT_ORIGIN
+    })
+);
+
 app.use(require('cookie-parser')())
 app.use(require('express-session')({secret: 'hand again pig something its cent while occur', resave: true, saveUninitialized: true, cookie: { secure : false, maxAge : (4 * 60 * 60 * 1000)} }))
 app.use(passport.initialize())
@@ -20,11 +26,7 @@ app.use('/users', userRouter)
 app.use('/wishlists', wishlistRouter)
 app.use('/ebooks', ebookRouter)
 
-app.use(
-    cors({
-        origin: CLIENT_ORIGIN
-    })
-);
+
 
 
 let server;
