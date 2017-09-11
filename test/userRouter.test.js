@@ -97,6 +97,7 @@ describe('USERS API RESOURCE', () => {
 								token = jwt.sign(
 					                {
 					                    user: {
+					                        id: userId,
 					                        email,
 					                        wishlists
 					                    }
@@ -335,7 +336,7 @@ describe('USERS API RESOURCE', () => {
 		// 			res.body.message.should.be.equal('Wishlist does not exist')
 		// 		})
 		// })
-		
+
 	})
 
 	describe('DELETE endpoint', () => {

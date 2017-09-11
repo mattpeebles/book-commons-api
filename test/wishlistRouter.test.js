@@ -1,5 +1,6 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
+const jwt = require('jsonwebtoken')
 const should = chai.should()
 const expect = chai.expect()
 
@@ -10,7 +11,7 @@ mongoose.Promise = global.Promise
 
 const faker = require('faker')
 
-const {TEST_DATABASE_URL} = require('../config')
+const {TEST_DATABASE_URL, JWT_SECRET} = require('../config')
 const {app, runServer, closeServer} = require('../server')
 const {Users, Wishlists, Ebooks} = require('../models')
 
@@ -122,8 +123,12 @@ function tearDownDb(){
 
 
 describe('WISHLIST API RESOURCE', () => {
-	let wishlistIds = [];
-	let agent = chai.request.agent(app)
+	let userId;
+	let token;
+	const email = 'frank@ocean.com';
+	const password = 'chanel';
+	let wishlists = [];
+	//let agent = chai.request.agent(app)
 
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
@@ -132,14 +137,8 @@ describe('WISHLIST API RESOURCE', () => {
 		return seedWishlistDatabase()
 	})
 	beforeEach(() => {
-		
+		wishlists = []
 			//set up and log agent in to do authorized tests
-		wishlistIds = []
-		let user = {
-			email: 'frank@ocean.com',
-			password: 'chanel',
-			wishlists: wishlistIds
-		}
 
 		return Wishlists
 			.find()
@@ -147,31 +146,42 @@ describe('WISHLIST API RESOURCE', () => {
 			.then(lists => {
 					//send wishlist ids into array that is accessible by all tests
 				lists.forEach(list => {
-					wishlistIds.push(list.id)
+					wishlists.push(list.id)
 				})
 
-				return chai.request(app)
-						.post('/users')
-						.send(user)
-						.then(_res => {
-							_res.should.have.status(201)
-							return agent.post('/users/login')
-								.send({
-									email: user.email,
-									password: user.password
-								})			
-						})
-						.then(_res => {
-							console.log(`${user.email} is logged in`)
-						})
+				return Users.hashPassword(password)
+					.then(password => {
+						return Users
+							.create({
+								email,
+								password,
+								wishlists
+							})
+							.then(user => {
+								userId = user.id
+								token = jwt.sign(
+					                {
+					                    user: {
+					                        id: userId,
+					                        email,
+					                        wishlists
+					                    }
+					                },
+					                JWT_SECRET,
+					                {
+					                    algorithm: 'HS256',
+					                    subject: email,
+					                    expiresIn: '7d'
+					                }
+								);
+
+								return userId
+							})
+					})
 			})
 	})
-	afterEach(() => {
-		return chai.request(app)
-			.get('/users/logout')
-			.then(() => {
-				console.log(`Agent logged out`)
-			})
+    afterEach(function() {
+        return Users.remove({});
 	})
 	afterEach(() => {
 		return tearDownDb()
@@ -187,21 +197,23 @@ describe('WISHLIST API RESOURCE', () => {
 				
 				//test
 				//get all user wishlists
-			return agent.get('/wishlists')
+			return chai.request(app)
+				.get('/wishlists')
+				.set('authorization', `Bearer ${token}`)
 				.then(_res => {
 					res = _res
 					res.should.have.status(200)
 					res.should.be.json
 					res.body.wishlists.should.have.length(3)
-					res.body.wishlists[0].id.should.be.equal(wishlistIds[0])
-					res.body.wishlists[1].id.should.be.equal(wishlistIds[1])
-					res.body.wishlists[2].id.should.be.equal(wishlistIds[2])
+					res.body.wishlists[0].id.should.be.equal(wishlists[0])
+					res.body.wishlists[1].id.should.be.equal(wishlists[1])
+					res.body.wishlists[2].id.should.be.equal(wishlists[2])
 				})
 		});
 
 		it('should return a particular wishlist', () => {
 			let res;
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)]
 			
 				//test
 				//get particular wishlist
@@ -220,24 +232,35 @@ describe('WISHLIST API RESOURCE', () => {
 	});
 
 	describe('Post endpoint', () => {
-		it('should post new wishlist to database', () => {
-			let wishlist = {
-				title: generateTitle()
-			}
+		let wishlist = {
+			title: generateTitle()
+		}
 			
+		it('should post new wishlist to database', () => {
 			let res;
 
 				//test
 				//post new wishlist
-			return agent.post('/wishlists')
+			return chai.request(app)
+				.post('/wishlists')
+				.set('authorization', `Bearer ${token}`)
 				.send(wishlist)
 				.then(_res => {
 					res = _res
 					res.should.have.status(201)
-					res.body.user.wishlists.should.include(res.body.wishlist.id)
 					res.body.wishlist.title.should.be.equal(wishlist.title)
 					res.body.wishlist.title.should.be.a('string')
 					res.body.wishlist.items.should.deep.equal([])
+				})
+		})
+
+		it('should add new wishlist id to users wishlists', () => {
+			return chai.request(app)
+				.post('/wishlists')
+				.set('authorization', `Bearer ${token}`)
+				.send(wishlist)
+				.then(res => {
+					res.body.user.wishlists.should.include(res.body.wishlist.id)
 				})
 		})
 	});
@@ -245,7 +268,7 @@ describe('WISHLIST API RESOURCE', () => {
 
 	describe('Put endpoint', () => {
 		it('should update wishlist title', () => {
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)]
 			let updateList = {
 				listId: wishlistId,
 				title: 'The Life of Pablo'
@@ -261,7 +284,8 @@ describe('WISHLIST API RESOURCE', () => {
 
 						//test double check
 						//get same wishlist to see if it's been updated
-					return agent.get(`/wishlists/${wishlistId}`)
+					return chai.request(app)
+						.get(`/wishlists/${wishlistId}`)
 				})
 				.then(res => {
 					res.body.title.should.be.equal(updateList.title)
@@ -270,7 +294,7 @@ describe('WISHLIST API RESOURCE', () => {
 
 		it('should add ebook id to items array', () => {
 			let ebookId = generateItemId()
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)]
 			let updateItem = {
 				listId: wishlistId,
 				item: ebookId
@@ -289,7 +313,7 @@ describe('WISHLIST API RESOURCE', () => {
 		})
 
 		it('should not add a duplicate ebook id to items array', () => {
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)]
 			let ebookId = generateItemId()
 			let item = {
 					listId: wishlistId,
@@ -318,7 +342,7 @@ describe('WISHLIST API RESOURCE', () => {
 		it('should remove book from wishlist items', () => {
 			seedEbookDatabase()
 
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)]
 			
 			//prep
 			//get an ebook id
@@ -366,17 +390,21 @@ describe('WISHLIST API RESOURCE', () => {
 
 	describe('Delete endpoint', () => {
 		it('should remove wishlist from collection and from user object', () => {
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)]
 			
 				//test
 				//removes wishlist from wishlist collection
-			return agent.delete(`/wishlists/${wishlistId}`)
+			return chai.request(app)
+				.delete(`/wishlists/${wishlistId}`)
+				.set('authorization', `Bearer ${token}`)
 				.then(res => {
 					res.should.have.status(204)
 
 						//test
 						//ensures that wishlist id was removed from user object
-					return agent.get('/users/me')
+					return chai.request(app)
+						.get('/users/me')
+						.set('authorization', `Bearer ${token}`)
 						.then(res => {
 							res.body.wishlists.should.not.include(wishlistId)
 						})

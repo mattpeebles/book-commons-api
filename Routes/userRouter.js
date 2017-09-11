@@ -50,13 +50,14 @@ userRouter.get(
 	'/me', 
 	passport.authenticate('jwt', {session: false}), 
 	(req, res) => {
-		const {email, wishlists} = req.user
+		//const {email, wishlists} = req.user
+
 
 		Users
-			.find({email: email, wishlists: wishlists})
+			.findById(req.user.id)
 			.exec()
 			.then(user => {
-				return res.json(user[0].userRepr())
+				return res.json(user.userRepr())
 			})
 	}
 )

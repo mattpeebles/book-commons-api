@@ -4,7 +4,7 @@
   "description": "api for book commons",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 3000 --retries 3 -g 'USERS'",
+    "test": "mocha --timeout 3000 -g 'WISHLIST API RESOURCE'",
     "start": "node server.js"
   },
   "author": "Matt Peebles",
