@@ -1,30 +1,30 @@
-const chai = require('chai')
-const chaiHttp = require('chai-http')
-const jwt = require('jsonwebtoken')
-const {expect, should} = require('chai')
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const jwt = require('jsonwebtoken');
+const {expect, should} = require('chai');
 
-chai.use(chaiHttp)
+chai.use(chaiHttp);
 
-const mongoose = require('mongoose')
-mongoose.Promise = global.Promise
+const mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
 
-const faker = require('faker')
+const faker = require('faker');
 
-const {TEST_DATABASE_URL, JWT_SECRET} = require('../config')
-const {app, runServer, closeServer} = require('../server')
-const {Users, Ebooks, Wishlists} = require('../models')
+const {TEST_DATABASE_URL, JWT_SECRET} = require('../config');
+const {app, runServer, closeServer} = require('../server');
+const {Users, Ebooks, Wishlists} = require('../models');
 
 // Test Database seed functions
 
 	function seedEbookDatabase(){
-		console.info('creating test database of users')
-		const seedData = []
+		console.info('creating test database of users');
+		const seedData = [];
 
 		for (let i = 1; i <= 3; i++){
 			seedData.push(generateEbookData())
 		}
 
-		return Ebooks.insertMany(seedData)
+		return Ebooks.insertMany(seedData);
 	}
 
 	function generateEbookData(){
@@ -87,8 +87,8 @@ function tearDownDb(){
 	return new Promise((resolve, reject) => {
 		console.warn('Delete test database')
 		return mongoose.connection.dropDatabase()
-		.then(result => resolve(result))
-		.catch(err => reject(err))
+			.then(result => resolve(result))
+			.catch(err => reject(err))
 	})
 }
 
@@ -166,7 +166,7 @@ describe('EBOOK API RESOURCE', () => {
 		it('should return all ebooks', () => {
 			let res;
 			return chai.request(app)
-				.get('/ebooks')
+				.get('/api/ebooks')
 				.send({message: 'hello'})
 				.then(_res => {
 					res = _res
@@ -185,7 +185,7 @@ describe('EBOOK API RESOURCE', () => {
 					bookId = ebook.id
 
 					return chai.request(app)
-						.get(`/ebooks/${bookId}`)
+						.get(`/api/ebooks/${bookId}`)
 						.then(_res => {
 							res = _res
 							res.should.have.status(200)
@@ -212,7 +212,7 @@ describe('EBOOK API RESOURCE', () => {
 						//prep
 						//post new wishlist with ebook ids in items
 					return chai.request(app)
-						.post('/wishlists')
+						.post('/api/wishlists')
 						.set('authorization', `Bearer ${token}`)
 						.send({
 							title: 'Test',
@@ -226,7 +226,7 @@ describe('EBOOK API RESOURCE', () => {
 						//test
 						//get ebooks associated with wishlist
 					return chai.request(app)
-						.get(`/ebooks/wishlist/${listId}`)
+						.get(`/api/ebooks/wishlist/${listId}`)
 				})
 				.then(res => {
 					res.should.have.status(200)
@@ -247,7 +247,7 @@ describe('EBOOK API RESOURCE', () => {
 				//test
 				//add new ebook to database
 			return chai.request(app)
-				.post('/ebooks')
+				.post('/api/ebooks')
 				.send(ebook)
 				.then(res => {
 
@@ -269,13 +269,13 @@ describe('EBOOK API RESOURCE', () => {
 			let ebook = generateEbookData()
 
 			return chai.request(app)
-				.post('/ebooks')
+				.post('/api/ebooks')
 				.send(ebook)
 				.then(res => {
 					res.should.have.status(201)
 					
 					return chai.request(app)
-						.post('/ebooks')
+						.post('/api/ebooks')
 						.send(ebook)
 						.then(res => {
 							res.should.have.status(200)
@@ -310,7 +310,7 @@ describe('EBOOK API RESOURCE', () => {
 						//test
 						//remove ebook from database
 					return chai.request(app)
-						.delete(`/ebooks/${bookId}`)
+						.delete(`/api/ebooks/${bookId}`)
 				})
 				.then(res => {
 					res.should.have.status(204)

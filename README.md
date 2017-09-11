@@ -9,6 +9,8 @@
     2. [Wishlist](#todoWishlist)
     3. [Users](#todoUsers)
 3. [Routes](#routes)
+	1. [Auth](#routeAuth)
+		1. [Post](#authPost)
 	1. [Ebook](#routeEbook)
 		1. [Get](#ebookGet)
 		2. [Post](#ebookPost)
@@ -27,7 +29,7 @@
 
 ## Introduction <a name="introduction"></a>
 
-This is a RESTful API backend for *Book Commons*, a public domain ebook aggregator. There are three routes - ebooks, wishlists, users - that can be accessed. A description of each of the paths, requirements, and results are below. 
+This is a RESTful API backend for *Book Commons*, a public domain ebook aggregator. There are four routes - auth, ebooks, wishlists, users - that can be accessed. A description of each of the paths, requirements, and results are below. 
 
 ## TODO <a name="todo"></a>
 
@@ -43,23 +45,37 @@ This is a RESTful API backend for *Book Commons*, a public domain ebook aggregat
 -----------
 ## Routes <a name="routes"></a>
 
+### Auth <a name="routeAuth"></a>
+
+#### Post <a name="authPost"></a>
+`/api/auth/login`
+
+- allows user to login by creating jwt token
+- sends jwt token as response
+
+`/api/auth/refresh/`
+
+- uses soon to expire valid jwt token to create new one
+- sends new token back as response
+
+
 ### Ebook <a name="routeEbook"></a>
 
 #### Get <a name="ebookGet"></a>
-`/ebooks`
+`/api/ebooks`
 
 lists all ebooks
 
-`/ebooks/:bookId`
+`/api/ebooks/:bookId`
 
 displays particular ebook
 
-`/ebooks/wishlist/:listId`
+`/api/ebooks/wishlist/:listId`
 
 returns all ebooks associated with listId
 
 #### Post <a name="ebookPost"></a>
-`/ebooks`
+`/api/ebooks`
 
 adds an ebook with values
 - title
@@ -77,7 +93,7 @@ adds an ebook with values
 There is not a put route for ebooks. These ebook objects ideally and practically are immutable as they are pulled from outside databases.
 
 #### Delete <a name="ebookDelete"></a>
-`/ebooks/:bookId`
+`/api/ebooks/:bookId`
 
 Removes ebook from database
 
@@ -86,16 +102,16 @@ Removes ebook from database
 ### Wishlist <a name="routeWishlist"></a>
 
 #### Get <a name="wishlistGet"></a>
-`/wishlists`
+`/api/wishlists`
 
 lists all wishlists of user
 
-`/wishlists/:listId`
+`/api/wishlists/:listId`
 
 displays particular list
 
 #### Post <a name="wishlistPost"></a>
-`/wishlists`
+`/api/wishlists`
 
 adds a new wishlist with values
 - title
@@ -105,25 +121,25 @@ adds wishlist id to users wishlist array automatically
 
 
 #### Put <a name="wishlistPut"></a>
-`wishlists/:listId`
+`/api/wishlists/:listId`
 
 - updates title of wishlist
 - must have id of wishlist in request body passed in as listId
 
-`/wishlists/:listId/add/:bookId`
+`/api/wishlists/:listId/add/:bookId`
 
 - adds ebook id to items array
 - must have id of wishlist in request body passed in as listId
 - prevents duplicate ids from being added to same wishlist
 
-`/wishlists/:listId/delete/:bookId`
+`/api/wishlists/:listId/delete/:bookId`
 
 - removes ebook from items array
 - must have id of wishlist in request body passed in as listId
 
 
 #### Delete <a name="wishlistDelete"></a>
-`/wishlists/:listId`
+`/api/wishlists/:listId`
 
 - Removes wishlist from database
 - currently does not remove ebooks from database
@@ -131,27 +147,13 @@ adds wishlist id to users wishlist array automatically
 ----------
 ### Users <a name="routeUsers"></a>
 
-#### Login <a name="usersLogin"></a>
-`/users/login`
-
-- *post request*
-- allows user to login
-- initiates session
-
-#### Logout <a name="usersLogout"></a>
-`/users/logout/`
-
-- *get request*
-- logs user out
-- ends session
-
 #### Get <a name="usersGet"></a>
-`/users/me` 
+`/api/users/me` 
 
 displays info of logged in user
 
 #### Post <a name="usersPost"></a>
-`/users`
+`/api/users`
 
 ensures there are not duplicate emails in database before creating user
 and hashes password
@@ -162,25 +164,14 @@ adds a new user with values that are accessible in client
 
 
 #### Put <a name="usersPut"></a>
-`users/:userId`
+`/apiusers/:userId`
 
 - can update email and/or password of user
 - must have id of user in request body passed in as userId
 
-`/users/:userId/add/:listId`
-
-- *post `/wishlist` now adds the wishlist to user automatically*
-- adds wishlist id to wishlists array
-- must have id of user in request body passed in as userId
-
-`users/:userId/delete/:listId`
-- *delete `/wishlist/:listId` now removes the wishlist from user automatically*
-- removes wishlist id from wishlist array
-- must have id of user in request body passed in as userId
-
 
 #### Delete <a name="usersDelete"></a>
-`/users/:userId`
+`/api/users/:userId`
 
 - Removes user from database
 - currently does not remove list or ebooks from database

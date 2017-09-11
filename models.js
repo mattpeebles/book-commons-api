@@ -1,12 +1,12 @@
-const mongoose = require('mongoose')
-const bcrypt = require('bcrypt')
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
 //User Set Up
 	const UserSchema = mongoose.Schema({
 		email: {type: String, required: true},
 		password: {type: String, required: true},
 		wishlists: {type: [String], 'default': []}
-	})
+	});
 
 
 	UserSchema.methods.userRepr = function(){
@@ -15,22 +15,22 @@ const bcrypt = require('bcrypt')
 			email: this.email,
 			wishlists: this.wishlists
 		}
-	}
+	};
 
 	UserSchema.methods.validatePassword = function(password) {
 		return bcrypt.compare(password, this.password)
-	}
+	};
 
 	UserSchema.statics.hashPassword = function(password){
 		return bcrypt.hash(password, 10)
-	}
+	};
 //
 
 //Wishlist Set Up
 	const WishlistSchema = mongoose.Schema({
 		title: {type: String, required: true},
 		items: {type: Array, "default": []} //an array of objects
-	})
+	});
 
 	WishlistSchema.methods.listRepr = function(){
 		return {
@@ -38,7 +38,7 @@ const bcrypt = require('bcrypt')
 			title: this.title,
 			items: this.items
 		}
-	}
+	};
 //
 
 //Ebook Set Up
@@ -53,7 +53,7 @@ const bcrypt = require('bcrypt')
 		location: {type: String, required: true},
 		locationIcon: {type: String, required: true},
 		locationUrl: {type: String, required: true}
-	})
+	});
 
 	EbookSchema.methods.ebookRepr = function(){
 		return {
@@ -69,11 +69,11 @@ const bcrypt = require('bcrypt')
 			locationIcon: this.locationIcon,
 			locationUrl: this.locationUrl
 		}
-	}
+	};
 //
 
-const Users = mongoose.model('users', UserSchema)
-const Wishlists = mongoose.model('wishlists', WishlistSchema)
-const Ebooks = mongoose.model('ebooks', EbookSchema)
+const Users = mongoose.model('users', UserSchema);
+const Wishlists = mongoose.model('wishlists', WishlistSchema);
+const Ebooks = mongoose.model('ebooks', EbookSchema);
 
-module.exports = {Users, Wishlists, Ebooks}
+module.exports = {Users, Wishlists, Ebooks};

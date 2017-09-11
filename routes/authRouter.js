@@ -6,8 +6,6 @@ const config = require('../config');
 
 const createAuthToken = user => {
     
-    console.log(user)
-
     return jwt.sign({user}, config.JWT_SECRET, {
         subject: user.email,
         expiresIn: config.JWT_EXPIRY,
@@ -15,11 +13,11 @@ const createAuthToken = user => {
     });
 };
 
-const router = express.Router();
+const authRouter = express.Router();
 
-router.post(
+    //email and password required
+authRouter.post(
     '/login',
-    // The user provides a username and password to login
     passport.authenticate('basic', {session: false}),
     (req, res) => {
         const authToken = createAuthToken(req.user.userRepr());
@@ -27,10 +25,9 @@ router.post(
     }
 );
 
-router.post(
+    //requires valid jwt token before new one can be received
+authRouter.post(
     '/refresh',
-    // The user exchanges an existing valid JWT for a new one with a later
-    // expiration
     passport.authenticate('jwt', {session: false}),
     (req, res) => {
         const authToken = createAuthToken(req.user);
@@ -38,4 +35,4 @@ router.post(
     }
 );
 
-module.exports = {router};
+module.exports = authRouter;
