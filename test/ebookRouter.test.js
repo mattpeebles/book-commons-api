@@ -1,5 +1,6 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
+const jwt = require('jsonwebtoken')
 const {expect, should} = require('chai')
 
 chai.use(chaiHttp)
@@ -9,9 +10,9 @@ mongoose.Promise = global.Promise
 
 const faker = require('faker')
 
-const {TEST_DATABASE_URL} = require('../config')
+const {TEST_DATABASE_URL, JWT_SECRET} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Ebooks, Wishlists} = require('../models')
+const {Users, Ebooks, Wishlists} = require('../models')
 
 // Test Database seed functions
 
@@ -93,8 +94,12 @@ function tearDownDb(){
 
 
 describe('EBOOK API RESOURCE', () => {
-	let wishlistIds = [];
-	let agent = chai.request.agent(app)
+	let userId;
+	let token;
+	const email = 'frank@ocean.com';
+	const password = 'chanel';
+	let wishlists = [];
+	//let agent = chai.request.agent(app)
 
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
@@ -103,47 +108,51 @@ describe('EBOOK API RESOURCE', () => {
 		return seedEbookDatabase()
 	})
 	beforeEach(() => {
-		
+		wishlists = []
 			//set up and log agent in to do authorized tests
-		wishlistIds = []
-		let user = {
-			email: 'frank@ocean.com',
-			password: 'chanel',
-			wishlists: wishlistIds
-		}
 
 		return Wishlists
 			.find()
 			.exec()
 			.then(lists => {
-
-					//get wishlists ids into variable that can be accessed by all tests
+					//send wishlist ids into array that is accessible by all tests
 				lists.forEach(list => {
-					wishlistIds.push(list.id)
+					wishlists.push(list.id)
 				})
 
-				return chai.request(app)
-						.post('/users')
-						.send(user)
-						.then(_res => {
-							_res.should.have.status(201)
-							return agent.post('/users/login')
-								.send({
-									email: user.email,
-									password: user.password
-								})			
-						})
-						.then(_res => {
-							console.log(`${user.email} is logged in`)
-						})
+				return Users.hashPassword(password)
+					.then(password => {
+						return Users
+							.create({
+								email,
+								password,
+								wishlists
+							})
+							.then(user => {
+								userId = user.id
+								token = jwt.sign(
+					                {
+					                    user: {
+					                        id: userId,
+					                        email,
+					                        wishlists
+					                    }
+					                },
+					                JWT_SECRET,
+					                {
+					                    algorithm: 'HS256',
+					                    subject: email,
+					                    expiresIn: '7d'
+					                }
+								);
+
+								return userId
+							})
+					})
 			})
 	})
-	afterEach(() => {
-		return chai.request(app)
-			.get('/users/logout')
-			.then(() => {
-				console.log(`Agent logged out`)
-			})
+    afterEach(function() {
+        return Users.remove({});
 	})
 	afterEach(() => {
 		return tearDownDb()
@@ -202,7 +211,9 @@ describe('EBOOK API RESOURCE', () => {
 
 						//prep
 						//post new wishlist with ebook ids in items
-					return agent.post('/wishlists')
+					return chai.request(app)
+						.post('/wishlists')
+						.set('authorization', `Bearer ${token}`)
 						.send({
 							title: 'Test',
 							items: bookIds
