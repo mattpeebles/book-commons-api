@@ -178,7 +178,6 @@ userRouter.post('/', (req, res) => {
 });
 })
 	
-	//authorize
 	//updates email or password, password is hashed before
 	//given to user object
 userRouter.put('/:userId', passport.authenticate('jwt', {session: false}), (req, res) => {
@@ -220,76 +219,75 @@ userRouter.put('/:userId', passport.authenticate('jwt', {session: false}), (req,
 })
 
 
-	//authorize
-	//superfluous wishlist add handles this action
-	//adds non duplicate wishlist id to wishlists array in user object
-userRouter.put('/:userId/add/:listId', passport.authenticate('jwt', {session: false}), (req, res) => {
-	if(!(req.params.userId === req.body.userId)){
-		const message = (
-		  `Request path id (${req.params.userId}) and request body id ` +
-		  `(${req.body.userId}) must match`);
-		console.error(message);
-		res.status(400).json({message: message});	
-	}
+// 	//superfluous wishlist add handles this action
+// 	//adds non duplicate wishlist id to wishlists array in user object
+// userRouter.put('/:userId/add/:listId', passport.authenticate('jwt', {session: false}), (req, res) => {
+// 	if(!(req.params.userId === req.body.userId)){
+// 		const message = (
+// 		  `Request path id (${req.params.userId}) and request body id ` +
+// 		  `(${req.body.userId}) must match`);
+// 		console.error(message);
+// 		res.status(400).json({message: message});	
+// 	}
 
-	let newList = req.params.listId
+// 	let newList = req.params.listId
 
-	let toUpdate = {}
+// 	let toUpdate = {}
 
-	return Users
-		.findById(req.params.userId)
-		.exec()
-		.then(user => {
-			let wishlists = user.wishlists
-			wishlists.push(newList)
+// 	return Users
+// 		.findById(req.params.userId)
+// 		.exec()
+// 		.then(user => {
+// 			let wishlists = user.wishlists
+// 			wishlists.push(newList)
 
-			toUpdate['wishlists'] = wishlists
+// 			toUpdate['wishlists'] = wishlists
 
-			return Users
-				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
-				.exec()
-		})
-		.then(user => {
+// 			return Users
+// 				.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+// 				.exec()
+// 		})
+// 		.then(user => {
 			
-			res.status(201).json(user.userRepr())
-		})
-})
+// 			res.status(201).json(user.userRepr())
+// 		})
+// })
 
-	//authorize
-	//superfluous wishlist delete handles this action
-	//removes wishlist id from wishlists array in user object
-userRouter.put('/:userId/delete/:listId', passport.authenticate('jwt', {session: false}), (req, res) => {
-	if(!(req.params.userId === req.body.userId)){
-		const message = (
-		  `Request path id (${req.params.userId}) and request body userId ` +
-		  `(${req.body.userId}) must match`);
-		console.error(message);
-		res.status(400).json({message: message});	
-	}
 
-	let toUpdate = {}
+// 	//superfluous wishlist delete handles this action
+// 	//removes wishlist id from wishlists array in user object
+// userRouter.put('/:userId/delete/:listId', passport.authenticate('jwt', {session: false}), (req, res) => {
+// 	if(!(req.params.userId === req.body.userId)){
+// 		const message = (
+// 		  `Request path id (${req.params.userId}) and request body userId ` +
+// 		  `(${req.body.userId}) must match`);
+// 		console.error(message);
+// 		res.status(400).json({message: message});	
+// 	}
 
-	return Users
-		.findById(req.params.userId)
-		.exec()
-		.then(user => {
-			let wishlists = user.wishlists.filter(id => id !== req.params.listId)
+// 	let toUpdate = {}
 
-			toUpdate['wishlists'] = wishlists
+// 	return Users
+// 		.findById(req.params.userId)
+// 		.exec()
+// 		.then(user => {
+// 			let wishlists = user.wishlists.filter(id => id !== req.params.listId)
 
-			return Wishlists
-				.findByIdAndRemove(req.params.listId)
-				.exec()
-				.then(() => {
-				return Users
-					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
-					.exec()
-					.then(user => {
-						res.status(201).json(user.userRepr())
-					})
-				})
-		})
-})
+// 			toUpdate['wishlists'] = wishlists
+
+// 			return Wishlists
+// 				.findByIdAndRemove(req.params.listId)
+// 				.exec()
+// 				.then(() => {
+// 				return Users
+// 					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+// 					.exec()
+// 					.then(user => {
+// 						res.status(201).json(user.userRepr())
+// 					})
+// 				})
+// 		})
+// })
 
 
 	//authorize
@@ -308,15 +306,16 @@ userRouter.delete('/:userId', passport.authenticate('jwt', {session: false}), (r
 				findArgs.push(new mongoose.Types.ObjectId( list ))
 			})
 
-			Wishlists
+			return Wishlists
 				.find({'_id': {$in: findArgs}})
 				.remove()
 				.exec()
-				.then(lists => {
-					console.log('All user wishlists have been deleted')
-				})
-
-			return user
+		})
+		.then(res => {
+			if(res.result.ok === 1){
+				console.log(`All user wishlists have been deleted - ${res.result.n}`)
+			}
+			return 
 		})
 		.then(() => {
 			Users

@@ -4,7 +4,7 @@
   "description": "api for book commons",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --timeout 3000 -g 'should update email'",
+    "test": "mocha --timeout 3000 --retries 3 -g 'USERS'",
     "start": "node server.js"
   },
   "author": "Matt Peebles",
