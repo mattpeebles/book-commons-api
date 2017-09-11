@@ -1,5 +1,6 @@
 const chai = require('chai')
 const chaiHttp = require('chai-http')
+const jwt = require('jsonwebtoken')
 const should = chai.should()
 const expect = chai.expect()
 
@@ -10,36 +11,39 @@ mongoose.Promise = global.Promise
 
 const faker = require('faker')
 
-const {TEST_DATABASE_URL} = require('../config')
+const {TEST_DATABASE_URL, JWT_SECRET} = require('../config')
 const {app, runServer, closeServer} = require('../server')
-const {Users, Wishlists} = require('../models')
+const {Users 
+	//Wishlists
+} = require('../models')
+
 
 // Test Database seed functions
 	//Wishlist database
-		function seedWishlistDatabase(){
-			console.info('creating test database of wishlists')
-			const seedData = []
+		// function seedWishlistDatabase(){
+		// 	console.info('creating test database of wishlists')
+		// 	const seedData = []
 
-			for (let i = 1; i <= 6; i++){
-				seedData.push(generateWishlistData())
-			}
-			return Wishlists.insertMany(seedData)
-		}
+		// 	for (let i = 1; i <= 6; i++){
+		// 		seedData.push(generateWishlistData())
+		// 	}
+		// 	return Wishlists.insertMany(seedData)
+		// }
 
-		function generateWishlistData(){
-			return {
-				title: generateTitle(),
-				items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
-			}
-		}
+		// function generateWishlistData(){
+		// 	return {
+		// 		title: generateTitle(),
+		// 		items: [generateItemId(), generateItemId(), generateItemId(), generateItemId()]
+		// 	}
+		// }
 
-		function generateTitle(){
-			return faker.random.word()
-		}
+		// function generateTitle(){
+		// 	return faker.random.word()
+		// }
 
-		function generateItemId(){
-			return faker.random.uuid()
-		}
+		// function generateItemId(){
+		// 	return faker.random.uuid()
+		// }
 	//
 
 // 
@@ -58,132 +62,154 @@ describe('USERS API RESOURCE', () => {
 	let wishlistIds = [];
 	let user;
 	let userId;
-	let agent = chai.request.agent(app)
-
-	const usersArray = [{
-			email: 'frank@ocean.com',
-			password: 'chanel',
-			wishlists: []
-		},
-		{
-			email: 'bon@iver.com',
-			password: '#29 stratford apts',
-			wishlists: []
-		},
-		{
-			email: 'kanye@west.com',
-			password: 'wavvy',
-			wishlists: []
-		}]
+	//let agent = chai.request.agent(app)
+	const email = 'bon@iver.com';
+	const password = '#29 stratford apts';
+	const wishlists = [];
 
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
 	})
-	beforeEach(() => {
-		return seedWishlistDatabase()
-	})
+	// beforeEach(() => {
+	// 	return seedWishlistDatabase()
+	// })
 	beforeEach(() => {
 			//set up and log agent in to do authorized tests
 		wishlistIds = []
 
-		user = usersArray[Math.floor(Math.random() * usersArray.length)]
+		// return Wishlists
+		// 	.find()
+		// 	.exec()
+		// 	.then(lists => {
+		// 			//get all wishlist ids into a variable accessible to all tests
+		// 		lists.forEach(list => {
+		// 			wishlistIds.push(list.id)
+		// 		})
 
-		return Wishlists
-			.find()
-			.exec()
-			.then(lists => {
-					//get all wishlist ids into a variable accessible to all tests
-				lists.forEach(list => {
-					wishlistIds.push(list.id)
-				})
+		// 		user.wishlists = wishlistIds
+				
+				return Users.hashPassword(password)
+					.then(password => {
+						Users
+							.create({
+								email,
+								password,
+								wishlists
+							})
+							.then(user => {
+								console.log(user.id)
+								userId = user.id
+							})
+					})
 
-				user.wishlists = wishlistIds
+				// return chai.request(app)
+				// 		.post('/users')
+				// 		.send(user)
+				// 		.then(_res => {
+				// 			_res.should.have.status(201)
+				// 			return agent.post('/users/login')
+				// 				.send({
+				// 					email: user.email,
+				// 					password: user.password
+				// 				})			
+				// 		})
+				// 		.then(_res => {
+				// 			return agent.get(`/users/me`)
+				// 		})
+				// 		.then(res => {
+				// 				//get user id into var that can be accessible to all tests
+				// 			userId = res.body.id
+				// 			console.log(`${user.email} is logged in`)
 
-				return chai.request(app)
-						.post('/users')
-						.send(user)
-						.then(_res => {
-							_res.should.have.status(201)
-							return agent.post('/users/login')
-								.send({
-									email: user.email,
-									password: user.password
-								})			
-						})
-						.then(_res => {
-							return agent.get(`/users/me`)
-						})
-						.then(res => {
-								//get user id into var that can be accessible to all tests
-							userId = res.body.id
-							console.log(`${user.email} is logged in`)
-
-						})
-			})
+				// 		})
+			// })
 	})
-	afterEach(() => {
-		return chai.request(app)
-			.get('/users/logout')
-			.then(() => {
-				console.log(`Agent logged out`)
-			})
+
+	// afterEach(() => {
+	// 	return chai.request(app)
+	// 		.get('/users/logout')
+	// 		.then(() => {
+	// 			console.log(`Agent logged out`)
+	// 		})
+	// })
+	// afterEach(() => {
+	// 	return tearDownDb()
+	// })
+
+    afterEach(function() {
+        return Users.remove({});
 	})
-	afterEach(() => {
-		return tearDownDb()
-	})
+
 	after(() => {
 		console.log('Closing test server')
 		return closeServer()
 	})
 
-	describe('Login/Logout', () => {
-		it('should login user', () => {
-			let res;
-			let agent = chai.request.agent(app)
+	// describe('Login/Logout', () => {
+	// 	it('should login user', () => {
+	// 		let res;
+	// 		let agent = chai.request.agent(app)
 			
-				//prep
-				//logs user out
-			return agent.get('/users/logout')
-				.then(() => {
+	// 			//prep
+	// 			//logs user out
+	// 		return agent.get('/users/logout')
+	// 			.then(() => {
 					
-						//test
-						//logs user in
-					return agent.post('/users/login')
-						.send({
-							email: user.email,
-							password: user.password
-						})
-				})
-				.then(_res => {
-					res = _res
-					res.should.have.status(201)
-					res.body.message.should.be.equal('Logged in')
-				})
-		})
+	// 					//test
+	// 					//logs user in
+	// 				return agent.post('/users/login')
+	// 					.send({
+	// 						email: user.email,
+	// 						password: user.password
+	// 					})
+	// 			})
+	// 			.then(_res => {
+	// 				res = _res
+	// 				res.should.have.status(201)
+	// 				res.body.message.should.be.equal('Logged in')
+	// 			})
+	// 	})
 
-		it('should logout user', () => {
-			let res;
+	// 	it('should logout user', () => {
+	// 		let res;
 			
-				//test
-				//logs user out
-			return chai.request(app)
-				.get('/users/logout')
-				.then(_res => {
-					res = _res
-					res.should.have.status(200)
-					res.body.message.should.be.equal('Log out successful')
-				})
-		})
-	})
+	// 			//test
+	// 			//logs user out
+	// 		return chai.request(app)
+	// 			.get('/users/logout')
+	// 			.then(_res => {
+	// 				res = _res
+	// 				res.should.have.status(200)
+	// 				res.body.message.should.be.equal('Log out successful')
+	// 			})
+	// 	})
+	// })
 
 	describe('GET endpoint', () => {
 
 		it('should return authorized user on GET', () => {
 			let res;
+
+			const token = jwt.sign(
+                {
+                    user: {
+                        email,
+                        wishlists
+                    }
+                },
+                JWT_SECRET,
+                {
+                    algorithm: 'HS256',
+                    subject: email,
+                    expiresIn: '7d'
+                }
+			);
 			
 				//test
 				//should return user profile
-			return agent.get('/users/me')
+			return chai.request(app)
+				.get('/users/me')
+				.set('authorization', `Bearer ${token}`)
 				.then(_res => {
 					res = _res
 
@@ -191,9 +217,9 @@ describe('USERS API RESOURCE', () => {
 					res.should.be.json
 					res.body.id.should.be.a('string')
 					res.body.email.should.be.a('string')
-					res.body.email.should.be.equal(user.email)
+					res.body.email.should.be.equal(email)
 					res.body.wishlists.should.be.a('array')
-					res.body.wishlists.should.deep.equal(user.wishlists)
+					res.body.wishlists.should.deep.equal(wishlists)
 				})
 		})
 	})
@@ -226,9 +252,26 @@ describe('USERS API RESOURCE', () => {
 				email: 'kendrick@lamar.com',
 				userId: userId
 			}	
+
+			const token = jwt.sign(
+                {
+                    user: {
+                        email,
+                        wishlists
+                    }
+                },
+                JWT_SECRET,
+                {
+                    algorithm: 'HS256',
+                    subject: email,
+                    expiresIn: '7d'
+                }
+			);
 				//test
 				//update user email
-			return agent.put(`/users/${userId}`)
+			return chai.request(app)
+				.put(`/users/${userId}`)
+				.set('authorization', `Bearer ${token}`)				
 				.send(updateUser)
 				.then(_res => {
 					res = _res

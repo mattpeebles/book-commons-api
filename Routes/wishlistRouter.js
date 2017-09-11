@@ -13,14 +13,15 @@ mongoose.Promise = global.Promise
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
-const {passport, authorize} = require('../auth')
+const {passport} = require('../auth')
 
 const {Users, Wishlists, Ebooks} = require('../models')
 
 wishlistRouter.use(jsonParser)
 
+	//authorize
 	//get all wishlists associated with logged in user
-wishlistRouter.get('/', authorize, (req, res) => {
+wishlistRouter.get('/', (req, res) => {
 	
 	let wishlists = req.user.wishlists
 
@@ -62,10 +63,12 @@ wishlistRouter.get('/:listId', (req, res) => {
 		})
 });
 
+
+	//authorize
 	//post new wishlist, isolated from user wishlist array
 	//must subsequently call /users/:userId/add/:listId to
 	//succesfully add it to user
-wishlistRouter.post('/', authorize, (req, res) => {
+wishlistRouter.post('/', (req, res) => {
 
 	let items = (req.body.items !== undefined) ? req.body.items : []
 
@@ -188,7 +191,8 @@ wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 
 
 
-wishlistRouter.delete('/:listId', authorize, (req, res) => {
+	//authorize
+wishlistRouter.delete('/:listId', (req, res) => {
 	
 	let wishlistsArray = req.user.wishlists.filter(list => list !== req.params.listId)
 

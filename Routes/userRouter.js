@@ -14,101 +14,174 @@ const {Users, Wishlists} = require('../models')
 const bodyParser = require('body-parser')
 const jsonParser = bodyParser.json()
 
-const {passport, authorize} = require('../auth')
+const passport = require('passport');
 
 userRouter.use(jsonParser)
 
-	//logs in user and initiates session
-userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
-    passport.authenticate('local', function(err, user, info) {  
-        if (err) return next(err);
-        if (!user) {
-            return res.status(403).json({
-                message: "no user found"
-            });
-        }
+// 	//logs in user and initiates session
+// userRouter.post('/login', function handleLocalAuthentication(req, res, next) {
+//     passport.authenticate('local', function(err, user, info) {  
+//         if (err) return next(err);
+//         if (!user) {
+//             return res.status(403).json({
+//                 message: "no user found"
+//             });
+//         }
 
-        // Manually establish the session...
-        req.login(user, function(err) {
-            if (err) return next(err);
-            res.status(201).json({message: 'Logged in', user: user.userRepr()})
-        });
-    })(req, res, next);
-});
+//         // Manually establish the session...
+//         req.login(user, function(err) {
+//             console.log('user login: ', user)
+//             if (err) return next(err);
+//             res.status(201).json({message: 'Logged in', user: user.userRepr()})
+//         });
+//     })(req, res, next);
+// });
 
-	//logs out user and ends session
-userRouter.get('/logout', (req, res) => {
-	req.logOut()
-	return res.status(200).json({message: 'Log out successful'})
-})
+// 	//logs out user and ends session
+// userRouter.get('/logout', (req, res) => {
+// 	req.logOut()
+// 	return res.status(200).json({message: 'Log out successful'})
+// })
 
+
+	//authorize
 	//return logged in user info
-userRouter.get('/me', authorize, (req, res) => res.json(req.user.userRepr()))
+userRouter.get(
+	'/me', 
+	passport.authenticate('jwt', {session: false}), 
+	(req, res) => {
+		const {email, wishlists} = req.user
+
+		Users
+			.find({email: email, wishlists: wishlists})
+			.exec()
+			.then(user => {
+				return res.json(user[0].userRepr())
+			})
+	}
+)
 
 
 	//adds a new user with a non-duplicate email
 userRouter.post('/', (req, res) => {
-	if (!req.body){
-		return res.status(400).json({message: 'No request body'})
-	}
+    const requiredFields = ['email', 'password'];
+    const missingField = requiredFields.find(field => !(field in req.body));
 
-	if (!('email' in req.body)){
-		return res.status(400).json({message: 'Missing field: email'})
-	}
 
-	let {email, password} = req.body
+    if (missingField) {
+        return res.status(422).json({
+            code: 422,
+            reason: 'ValidationError',
+            message: 'Missing field',
+            location: missingField
+        });
+    }
 
-	if(typeof(email) !== 'string'){
-		return res.status(422).json({message: 'Incorrect field type: email'})
-	}
+    const stringFields = ['email', 'password'];
+    const nonStringField = stringFields.find(
+        field => field in req.body && typeof req.body[field] !== 'string'
+    );
 
-	if (!(password)){
-		return res.status(422).json({message: 'Missing field: password'})
-	}
+    if (nonStringField) {
+        return res.status(422).json({
+            code: 422,
+            reason: 'ValidationError',
+            message: 'Incorrect field type: expected string',
+            location: nonStringField
+        });
+    }
 
-	if (typeof password !== 'string'){
-		return res.status(422).json({message: 'Incorrect field type: password'})
-	}
+    const explicityTrimmedFields = ['email', 'password'];
+    const nonTrimmedField = explicityTrimmedFields.find(
+        field => req.body[field].trim() !== req.body[field]
+    );
 
-	password = password.trim()
+    if (nonTrimmedField) {
+        return res.status(422).json({
+            code: 422,
+            reason: 'ValidationError',
+            message: 'Cannot start or end with whitespace',
+            location: nonTrimmedField
+        });
+    }
 
-	if (password === ''){
-		return res.status(422).json({message: 'Incorrect field length: password'})
-	}
+    const sizedFields = {
+        email: {
+            min: 1
+        },
+        password: {
+            min: 8,
+            // bcrypt truncates after 72 characters, so let's not give the illusion
+            // of security by storing extra (unused) info
+            max: 72
+        }
+    };
 
-	Users
-		.find({email})
-		.count()
-		.exec()
-		.then(count => {
-			if(count > 0){
-				return res.status(422).json({message: 'Email has already been used'})
-			}
+    const tooSmallField = Object.keys(sizedFields).find(
+        field =>
+            'min' in sizedFields[field] &&
+            req.body[field].trim().length < sizedFields[field].min
+    );
+    const tooLargeField = Object.keys(sizedFields).find(
+        field =>
+            'max' in sizedFields[field] &&
+            req.body[field].trim().length > sizedFields[field].max
+    );
 
-			return Users.hashPassword(password)
-		})
-		.then(hash => {
+    if (tooSmallField || tooLargeField) {
+        return res.status(422).json({
+            code: 422,
+            reason: 'ValidationError',
+            message: tooSmallField
+                ? `Must be at least ${sizedFields[tooSmallField]
+                      .min} characters long`
+                : `Must be at most ${sizedFields[tooLargeField]
+                      .max} characters long`,
+            location: tooSmallField || tooLargeField
+        });
+    }
 
-			let wishlists = (req.body.wishlists !== undefined) ? req.body.wishlists : []
+    let {email, password} = req.body;
 
-			return Users
-				.create({
-					email: email,
-					password: hash,
-					wishlists: wishlists
-				})
-		})
-		.then(user => {
-			return res.status(201).json(user.userRepr())
-		})
-		.catch(err => {
-			res.status(500).json({message: 'Internal server error'})
-		})
+    return Users.find({email})
+        .count()
+        .then(count => {
+            if (count > 0) {
+                // There is an existing user with the same email
+                return Promise.reject({
+                    code: 422,
+                    reason: 'ValidationError',
+                    message: 'email already taken',
+                    location: 'email'
+                });
+            }
+            // If there is no existing user, hash the password
+            return Users.hashPassword(password);
+        })
+        .then(hash => {
+            return Users
+            .create({
+                email,
+                password: hash
+            });
+        })
+        .then(user => {
+            return res.status(201).json(user.userRepr());
+        })
+        .catch(err => {
+            // Forward validation errors on to the client, otherwise give a 500
+            // error because something unexpected has happened
+            if (err.reason === 'ValidationError') {
+                return res.status(err.code).json(err);
+            }
+            res.status(500).json({code: 500, message: 'Internal server error'});
+});
 })
 	
+	//authorize
 	//updates email or password, password is hashed before
 	//given to user object
-userRouter.put('/:userId', authorize, (req, res) => {
+userRouter.put('/:userId', passport.authenticate('jwt', {session: false}), (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body userId ` +
@@ -147,9 +220,10 @@ userRouter.put('/:userId', authorize, (req, res) => {
 })
 
 
+	//authorize
 	//superfluous wishlist add handles this action
 	//adds non duplicate wishlist id to wishlists array in user object
-userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
+userRouter.put('/:userId/add/:listId', passport.authenticate('jwt', {session: false}), (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body id ` +
@@ -181,9 +255,10 @@ userRouter.put('/:userId/add/:listId', authorize, (req, res) => {
 		})
 })
 
+	//authorize
 	//superfluous wishlist delete handles this action
 	//removes wishlist id from wishlists array in user object
-userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
+userRouter.put('/:userId/delete/:listId', passport.authenticate('jwt', {session: false}), (req, res) => {
 	if(!(req.params.userId === req.body.userId)){
 		const message = (
 		  `Request path id (${req.params.userId}) and request body userId ` +
@@ -217,8 +292,9 @@ userRouter.put('/:userId/delete/:listId', authorize, (req, res) => {
 })
 
 
+	//authorize
 	//deletes account and all related wishlists
-userRouter.delete('/:userId', authorize, (req, res) => {
+userRouter.delete('/:userId', passport.authenticate('jwt', {session: false}), (req, res) => {
 	Users
 		.findById(req.params.userId)
 		.exec()
