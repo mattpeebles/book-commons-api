@@ -57,7 +57,7 @@ describe('AUTH ENDPOINTS', function() {
                 });
         });
 
-        it('Should reject requests with incorrect email', function() {
+        it('should reject requests with incorrect email', function() {
             return chai.request(app)
                 .post('/api/auth/login')
                 .auth('wrongEmail', password)
@@ -74,7 +74,7 @@ describe('AUTH ENDPOINTS', function() {
                 });
         });
 
-        it('Should reject requests with incorrect passwords', function() {
+        it('should reject requests with incorrect passwords', function() {
             return chai.request(app)
                 .post('/api/auth/login')
                 .auth(email, 'T Swift')
@@ -91,7 +91,7 @@ describe('AUTH ENDPOINTS', function() {
                 });
         });
 
-        it('Should return a valid auth token', function() {
+        it('should return a valid auth token', function() {
             return chai.request(app)
                 .post('/api/auth/login')
                 .auth(email, password)
@@ -113,7 +113,7 @@ describe('AUTH ENDPOINTS', function() {
     });
 
     describe('/api/auth/refresh', function() {
-        it('Should reject requests with no credentials', function() {
+        it('should reject requests with no credentials', function() {
             return chai.request(app)
                 .post('/api/auth/refresh')
                 .then(() =>
@@ -129,7 +129,7 @@ describe('AUTH ENDPOINTS', function() {
                 });
         });
 
-        it('Should reject requests with an invalid token', function() {
+        it('should reject requests with an invalid token', function() {
             const token = jwt.sign(
                 {
                     email,
@@ -159,7 +159,7 @@ describe('AUTH ENDPOINTS', function() {
                 });
         });
 
-        it('Should reject requests with an expired token', function() {
+        it('should reject requests with an expired token', function() {
             const token = jwt.sign(
                 {
                     user: {
@@ -190,7 +190,7 @@ describe('AUTH ENDPOINTS', function() {
                     res.should.have.status(401);
                 });
         });
-        it('Should return a valid auth token with a newer expiry date', function() {
+        it('should return a valid auth token with a newer expiry date', function() {
             const token = jwt.sign(
                 {
                     user: {

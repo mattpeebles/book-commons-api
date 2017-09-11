@@ -10,7 +10,7 @@ mongoose.Promise = global.Promise;
 
 
 	//Routers
-const {userRouter, wishlistRouter, ebookRouter, authRouter} = require('./routes')
+const {userRouter, wishlistRouter, ebookRouter, authRouter} = require('./route')
 const {basicStrategy, jwtStrategy} = require('./auth/strategy');
 
 
