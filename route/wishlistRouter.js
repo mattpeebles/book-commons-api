@@ -69,8 +69,9 @@ wishlistRouter.get('/:listId', (req, res) => {
 	//must subsequently call /users/:userId/add/:listId to
 	//succesfully add it to user
 wishlistRouter.post('/', passport.authenticate('jwt', {session: false}), (req, res) => {
-
+	
 	let items = (req.body.items !== undefined) ? req.body.items : []
+	let wishlist;
 
 	Wishlists
 		.create({
@@ -78,9 +79,15 @@ wishlistRouter.post('/', passport.authenticate('jwt', {session: false}), (req, r
 			items: items
 		})
 		.then(list => {
-			let jsonList = list.listRepr()
+			 wishlist = list.listRepr()
 
-			let wishlistsArray = [...req.user.wishlists, jsonList.id]
+			return Users
+				.findById(req.user.id)
+				.exec()
+		})
+		.then(user => {
+			
+			let wishlistsArray = [...user.wishlists, wishlist.id]
 			
 			let updateWishlists = {
 				wishlists: wishlistsArray
@@ -91,7 +98,7 @@ wishlistRouter.post('/', passport.authenticate('jwt', {session: false}), (req, r
 				.findByIdAndUpdate(req.user.id, {$set: updateWishlists}, {new: true})
 				.exec()
 				.then(user => {
-					res.status(201).json({user: user.userRepr(), wishlist: jsonList})
+					res.status(201).json({user: user.userRepr(), wishlist: wishlist})
 				})
 		})
 		.catch(err => {
@@ -194,23 +201,29 @@ wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 	//authorize
 wishlistRouter.delete('/:listId',  passport.authenticate('jwt', {session: false}), (req, res) => {
 	
-	let wishlistsArray = req.user.wishlists.filter(list => list !== req.params.listId)
-
-	let updateUser = {
-		wishlists: wishlistsArray
-	}
-
-	Users
-		.findByIdAndUpdate(req.user.id, {$set: updateUser}, {new: true})
+	return Users
+		.findById(req.user.id)
 		.exec()
-		.then(() => {
-			Wishlists
-				.findByIdAndRemove(req.params.listId)
-				.then(() => {
-					console.log(`${req.params.listId} Wishlist was removed`)
-					res.status(204).end()
-				})
-		})
+
+	.then(user => {
+		let wishlistsArray = user.wishlists.filter(list => list !== req.params.listId)
+		return {
+			wishlists: wishlistsArray
+		}
+	})
+	.then(updateUser => {
+		return Users
+			.findByIdAndUpdate(req.user.id, {$set: updateUser}, {new: true})
+			.exec()
+	})
+	.then(() => {
+		return Wishlists
+			.findByIdAndRemove(req.params.listId)
+	})
+	.then(() => {
+		console.log(`${req.params.listId} Wishlist was removed`)
+		res.status(204).end()
+	})
 });
 
 module.exports = wishlistRouter
