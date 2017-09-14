@@ -23,17 +23,22 @@ wishlistRouter.use(jsonParser)
 	//get all wishlists associated with logged in user
 wishlistRouter.get('/', passport.authenticate('jwt', {session: false}), (req, res) => {
 	
-	let wishlists = req.user.wishlists
-
-	let findArgs = []
-	
-	wishlists.forEach(list => {
-		findArgs.push(new mongoose.Types.ObjectId( list ))
-	})
-
-	Wishlists
-		.find({'_id': {$in: findArgs}})
+	return Users
+		.findById(req.user.id)
 		.exec()
+		.then(user => {
+			let wishlists = user.wishlists
+
+			let findArgs = []
+			
+			wishlists.forEach(list => {
+				findArgs.push(new mongoose.Types.ObjectId( list ))
+			})
+			
+			return Wishlists
+				.find({'_id': {$in: findArgs}})
+				.exec()
+		})
 		.then(wishlists => {
 			res.json({wishlists: 
 				wishlists.map(list => list.listRepr())
