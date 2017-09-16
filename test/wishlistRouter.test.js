@@ -1,18 +1,19 @@
-const chai = require('chai')
-const chaiHttp = require('chai-http')
-const should = chai.should()
-const expect = chai.expect()
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const jwt = require('jsonwebtoken');
+const should = chai.should();
+const expect = chai.expect();
 
-chai.use(chaiHttp)
+chai.use(chaiHttp);
 
-const mongoose = require('mongoose')
-mongoose.Promise = global.Promise
+const mongoose = require('mongoose');
+mongoose.Promise = global.Promise;
 
-const faker = require('faker')
+const faker = require('faker');
 
-const {TEST_DATABASE_URL} = require('../config')
-const {app, runServer, closeServer} = require('../server')
-const {Users, Wishlists, Ebooks} = require('../models')
+const {TEST_DATABASE_URL, JWT_SECRET} = require('../config');
+const {app, runServer, closeServer} = require('../server');
+const {Users, Wishlists, Ebooks} = require('../models');
 
 // Test Database seed functions
 	//Ebook database
@@ -113,17 +114,21 @@ const {Users, Wishlists, Ebooks} = require('../models')
 
 function tearDownDb(){
 	return new Promise((resolve, reject) => {
-		console.warn('Delete test database')
+		console.warn('Delete test database');
 		return mongoose.connection.dropDatabase()
-		.then(result => resolve(result))
-		.catch(err => reject(err))
+			.then(result => resolve(result))
+			.catch(err => reject(err))
 	})
 }
 
 
 describe('WISHLIST API RESOURCE', () => {
-	let wishlistIds = [];
-	let agent = chai.request.agent(app)
+	let userId;
+	let token;
+	const email = 'frank@ocean.com';
+	const password = 'chanel';
+	let wishlists = [];
+	//let agent = chai.request.agent(app)
 
 	before(() => {
 		return runServer(TEST_DATABASE_URL)
@@ -132,14 +137,7 @@ describe('WISHLIST API RESOURCE', () => {
 		return seedWishlistDatabase()
 	})
 	beforeEach(() => {
-		
-			//set up and log agent in to do authorized tests
-		wishlistIds = []
-		let user = {
-			email: 'frank@ocean.com',
-			password: 'chanel',
-			wishlists: wishlistIds
-		}
+		wishlists = [];
 
 		return Wishlists
 			.find()
@@ -147,38 +145,49 @@ describe('WISHLIST API RESOURCE', () => {
 			.then(lists => {
 					//send wishlist ids into array that is accessible by all tests
 				lists.forEach(list => {
-					wishlistIds.push(list.id)
-				})
+					wishlists.push(list.id)
+				});
 
-				return chai.request(app)
-						.post('/users')
-						.send(user)
-						.then(_res => {
-							_res.should.have.status(201)
-							return agent.post('/users/login')
-								.send({
-									email: user.email,
-									password: user.password
-								})			
-						})
-						.then(_res => {
-							console.log(`${user.email} is logged in`)
-						})
+				return Users.hashPassword(password)
+					.then(password => {
+						return Users
+							.create({
+								email,
+								password,
+								wishlists
+							})
+							.then(user => {
+								userId = user.id;
+								token = jwt.sign(
+					                {
+					                    user: {
+					                        id: userId,
+					                        email,
+					                        wishlists
+					                    }
+					                },
+					                JWT_SECRET,
+					                {
+					                    algorithm: 'HS256',
+					                    subject: email,
+					                    expiresIn: '7d'
+					                }
+								);
+
+								return userId
+							})
+					})
 			})
 	})
-	afterEach(() => {
-		return chai.request(app)
-			.get('/users/logout')
-			.then(() => {
-				console.log(`Agent logged out`)
-			})
+    afterEach(function() {
+        return Users.remove({});
 	})
 	afterEach(() => {
-		return tearDownDb()
+		return tearDownDb();
 	})
 	after(() => {
 		console.log('Closing test server')
-		return closeServer()
+		return closeServer();
 	})
 
 	describe('Get endpoint', () => {
@@ -187,146 +196,160 @@ describe('WISHLIST API RESOURCE', () => {
 				
 				//test
 				//get all user wishlists
-			return agent.get('/wishlists')
+			return chai.request(app)
+				.get('/api/wishlists')
+				.set('authorization', `Bearer ${token}`)
 				.then(_res => {
-					res = _res
-					res.should.have.status(200)
-					res.should.be.json
-					res.body.wishlists.should.have.length(3)
-					res.body.wishlists[0].id.should.be.equal(wishlistIds[0])
-					res.body.wishlists[1].id.should.be.equal(wishlistIds[1])
-					res.body.wishlists[2].id.should.be.equal(wishlistIds[2])
-				})
+					res = _res;
+					res.should.have.status(200);
+					res.should.be.json;
+					res.body.wishlists.should.have.length(3);
+					res.body.wishlists[0].id.should.be.equal(wishlists[0]);
+					res.body.wishlists[1].id.should.be.equal(wishlists[1]);
+					res.body.wishlists[2].id.should.be.equal(wishlists[2]);
+				});
 		});
 
 		it('should return a particular wishlist', () => {
 			let res;
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)];
 			
 				//test
 				//get particular wishlist
 			return chai.request(app)
-				.get(`/wishlists/${wishlistId}`)
+				.get(`/api/wishlists/${wishlistId}`)
 				.then(_res => {
-					res = _res
-					res.should.have.status(200)
-					res.should.be.json
-					res.body.id.should.be.equal(wishlistId)
-					res.body.title.should.be.a('string')
-					res.body.items.should.be.a('array')
-	
-				})
-		})
+					res = _res;
+					res.should.have.status(200);
+					res.should.be.json;
+					res.body.id.should.be.equal(wishlistId);
+					res.body.title.should.be.a('string');
+					res.body.items.should.be.a('array');
+				});
+		});
 	});
 
 	describe('Post endpoint', () => {
-		it('should post new wishlist to database', () => {
-			let wishlist = {
-				title: generateTitle()
-			}
+		let wishlist = {
+			title: generateTitle()
+		};
 			
+		it('should post new wishlist to database', () => {
 			let res;
 
 				//test
 				//post new wishlist
-			return agent.post('/wishlists')
+			return chai.request(app)
+				.post('/api/wishlists')
+				.set('authorization', `Bearer ${token}`)
 				.send(wishlist)
 				.then(_res => {
-					res = _res
-					res.should.have.status(201)
-					res.body.user.wishlists.should.include(res.body.wishlist.id)
-					res.body.wishlist.title.should.be.equal(wishlist.title)
-					res.body.wishlist.title.should.be.a('string')
-					res.body.wishlist.items.should.deep.equal([])
+					res = _res;
+					res.should.have.status(201);
+					res.body.wishlist.title.should.be.equal(wishlist.title);
+					res.body.wishlist.title.should.be.a('string');
+					res.body.wishlist.items.should.deep.equal([]);
 				})
-		})
+		});
+
+		it('should add new wishlist id to users wishlists', () => {
+			return chai.request(app)
+				.post('/api/wishlists')
+				.set('authorization', `Bearer ${token}`)
+				.send(wishlist)
+				.then(res => {
+					res.body.user.wishlists.should.include(res.body.wishlist.id);
+				})
+		});
 	});
 
 
 	describe('Put endpoint', () => {
 		it('should update wishlist title', () => {
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)];
+			
 			let updateList = {
 				listId: wishlistId,
 				title: 'The Life of Pablo'
-			}
+			};
 
 				//test
 				//update wishlist
 			return chai.request(app)
-				.put(`/wishlists/${wishlistId}`)
+				.put(`/api/wishlists/${wishlistId}`)
 				.send(updateList)
 				.then(res => {
-					res.should.have.status(201)
+					res.should.have.status(201);
 
 						//test double check
 						//get same wishlist to see if it's been updated
-					return agent.get(`/wishlists/${wishlistId}`)
+					return chai.request(app)
+						.get(`/api/wishlists/${wishlistId}`)
 				})
 				.then(res => {
-					res.body.title.should.be.equal(updateList.title)
+					res.body.title.should.be.equal(updateList.title);
 				})
-		})
+		});
 
 		it('should add ebook id to items array', () => {
-			let ebookId = generateItemId()
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let ebookId = generateItemId();
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)];
 			let updateItem = {
 				listId: wishlistId,
 				item: ebookId
-			}
+			};
 
 				//test
 				//add book to wishlist
 			return chai.request(app)
-				.put(`/wishlists/${updateItem.listId}/add/${ebookId}`)
+				.put(`/api/wishlists/${updateItem.listId}/add/${ebookId}`)
 				.send(updateItem)
 				.then(res => {
-					res.should.have.status(201)
-					res.body.items.should.be.a('array')
-					res.body.items.should.include(updateItem.item)
+					res.should.have.status(201);
+					res.body.items.should.be.a('array');
+					res.body.items.should.include(updateItem.item);
 				})
 		})
 
 		it('should not add a duplicate ebook id to items array', () => {
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
-			let ebookId = generateItemId()
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)];
+			let ebookId = generateItemId();
 			let item = {
 					listId: wishlistId,
 					item: ebookId
-				}
+				};
 			
 				//prep
 				//add book to wishlist
 			return chai.request(app)
-				.put(`/wishlists/${wishlistId}/add/${ebookId}`)
+				.put(`/api/wishlists/${wishlistId}/add/${ebookId}`)
 				.send(item)
 				.then(() => {
 					
 						//test
 						//try to add same book to wishlist
 					return chai.request(app)
-						.put(`/wishlists/${wishlistId}/add/${ebookId}`)
+						.put(`/api/wishlists/${wishlistId}/add/${ebookId}`)
 						.send(item)
 				})
 				.then(res => {
-					res.should.have.status(202)
-					res.body.message.should.be.equal('Item already exists in wishlist')
+					res.should.have.status(202);
+					res.body.message.should.be.equal('Item already exists in wishlist');
 				})	
 		})
 
 		it('should remove book from wishlist items', () => {
-			seedEbookDatabase()
+			seedEbookDatabase();
 
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)];
 			
 			//prep
 			//get an ebook id
 			return chai.request(app)
-				.get('/ebooks')
+				.get('/api/ebooks')
 				.then(res => {
-					res.should.have.status(200)
-					res.body.ebooks.should.have.length.of.at.least(1)
+					res.should.have.status(200);
+					res.body.ebooks.should.have.length.of.at.least(1);
 					
 					return {
 						listId: wishlistId,
@@ -337,7 +360,7 @@ describe('WISHLIST API RESOURCE', () => {
 						//prep
 						//add ebook to wishlist
 					return chai.request(app)
-						.put(`/wishlists/${obj.listId}/add/${obj.ebookId}`)
+						.put(`/api/wishlists/${obj.listId}/add/${obj.ebookId}`)
 						.send({
 							listId: obj.listId,
 							item: obj.ebookId
@@ -348,15 +371,15 @@ describe('WISHLIST API RESOURCE', () => {
 								//test
 								//remove ebook from wishlist
 							return chai.request(app)
-								.put(`/wishlists/${obj.listId}/delete/${obj.ebookId}`)
+								.put(`/api/wishlists/${obj.listId}/delete/${obj.ebookId}`)
 								.send({
 									listId: obj.listId,
 									item: obj.ebookId
 								})
 								.then(res => {
-									res.should.have.status(201)
-									res.body.message.should.be.equal('Ebook removed from wishlist')
-									res.body.wishlist.items.should.not.include(obj.ebookId)
+									res.should.have.status(201);
+									res.body.message.should.be.equal('Ebook removed from wishlist');
+									res.body.wishlist.items.should.not.include(obj.ebookId);
 								})
 						})
 				})
@@ -366,19 +389,23 @@ describe('WISHLIST API RESOURCE', () => {
 
 	describe('Delete endpoint', () => {
 		it('should remove wishlist from collection and from user object', () => {
-			let wishlistId = wishlistIds[Math.floor(Math.random() * wishlistIds.length)]
+			let wishlistId = wishlists[Math.floor(Math.random() * wishlists.length)];
 			
 				//test
 				//removes wishlist from wishlist collection
-			return agent.delete(`/wishlists/${wishlistId}`)
+			return chai.request(app)
+				.delete(`/api/wishlists/${wishlistId}`)
+				.set('authorization', `Bearer ${token}`)
 				.then(res => {
-					res.should.have.status(204)
+					res.should.have.status(204);
 
 						//test
 						//ensures that wishlist id was removed from user object
-					return agent.get('/users/me')
+					return chai.request(app)
+						.get('/api/users/me')
+						.set('authorization', `Bearer ${token}`)
 						.then(res => {
-							res.body.wishlists.should.not.include(wishlistId)
+							res.body.wishlists.should.not.include(wishlistId);
 						})
 				})
 		});
