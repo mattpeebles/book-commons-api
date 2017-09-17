@@ -316,7 +316,6 @@ describe('USERS API RESOURCE', () => {
 
 			let res;
 
-			console.log(newUser)
 				//test
 			return chai.request(app)
 				.post('/api/users')

@@ -76,10 +76,10 @@ ebookRouter.get('/wishlist/:listId', (req, res) => {
 		})
 });
 
-	//add new ebook to database, prevents duplicates by checking title, pages, and database it was pulled from
+	//add new ebook to database, prevents duplicates by checking title, formats, and database it was pulled from
 ebookRouter.post('/', (req, res) => {
 	Ebooks
-		.find({title: req.body.title, pages: req.body.pages, location: req.body.location})
+		.find({title: req.body.title, formats: req.body.formats, database: req.body.database})
 		.count()
 		.exec()
 		.then(count => {
@@ -87,6 +87,8 @@ ebookRouter.post('/', (req, res) => {
 			if(count === 0){
 				Ebooks
 					.create({
+						database: req.body.database,
+						icon: req.body.icon,
 						title: req.body.title,
 						author: req.body.author,
 						preview: req.body.preview,
@@ -94,12 +96,10 @@ ebookRouter.post('/', (req, res) => {
 						languages: req.body.languages,
 						pages: req.body.pages,
 						formats: req.body.formats,
-						location: req.body.location,
-						locationIcon: req.body.locationIcon,
-						locationUrl: req.body.locationUrl
+						location: req.body.location
 					})
 					.then(ebook => {
-						res.status(201).json(ebook.ebookRepr());
+						res.status(201).json({ebook: ebook.ebookRepr()});
 					})
 					.catch(err => {
 						console.error(err);
