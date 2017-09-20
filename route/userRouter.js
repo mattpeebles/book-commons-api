@@ -182,7 +182,10 @@ userRouter.put('/:userId', passport.authenticate('jwt', {session: false}), (req,
 				return Users
 					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
 					.exec()
-					.then(user => res.status(201).json({message: message, user: user.userRepr()}))
+					.then(user => {
+                        let authToken = createAuthToken(user)
+                        res.status(201).json({message: message, user: user.userRepr(), token: authToken})
+                    })
 					.catch(err => res.status(500).json({message: 'Internal server error'}))
 			})
 	}

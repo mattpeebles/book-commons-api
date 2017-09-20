@@ -20,7 +20,7 @@ authRouter.post(
     '/login',
     passport.authenticate('basic', {session: false}),
     (req, res) => {
-        const authToken = createAuthToken(req.user.userRepr());
+        const authToken = createAuthToken(req.user);
         res.json({authToken});
     }
 );

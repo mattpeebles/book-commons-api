@@ -144,11 +144,9 @@ describe('USERS API RESOURCE', () => {
                     const payload = jwt.verify(token, JWT_SECRET, {
                         algorithm: ['HS256']
                     });
-                    payload.user.should.deep.equal({
-                        email,
-                        wishlists,
-                        id: userId
-                    });
+                    payload.user._id.should.be.equal(userId)
+                    payload.user.email.should.be.equal(email)
+                    payload.user.wishlists.should.deep.equal(wishlists)
                 });
 		});
 	})

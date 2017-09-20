@@ -103,11 +103,10 @@ describe('AUTH ENDPOINTS', function() {
                     const payload = jwt.verify(token, JWT_SECRET, {
                         algorithm: ['HS256']
                     });
-                    payload.user.should.deep.equal({
-                        id: userId,
-                        email,
-                        wishlists
-                    });
+                   
+                    payload.user._id.should.be.equal(userId)
+                    payload.user.email.should.be.equal(email)
+                    payload.user.wishlists.should.deep.equal(wishlists)
                 });
         });
     });
