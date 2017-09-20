@@ -12,7 +12,10 @@ mongoose.Promise = global.Promise;
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
 
+const {AMAZON_SECRET} = require('../config')
 const {Wishlists, Ebooks} = require('../models');
+
+const amazon = require('amazon-product-api')
 
 
 ebookRouter.use(jsonParser);
@@ -31,6 +34,29 @@ ebookRouter.get('/', (req, res) => {
 			console.error(err);
 			res.status(500).json({message: 'Internal service error'});
 		})
+});
+
+
+ebookRouter.get('/amazon/:title', (req, res) => {
+	console.log(AMAZON_SECRET)
+	let client = amazon.createClient({
+		  awsId: "AKIAJXDEMJUFMXSLH7PQ",
+		  awsSecret: `${AMAZON_SECRET}`,
+		  awsTag: "book-commons-20"
+		});
+
+	client.itemSearch({
+		title: `${req.params.title}`,
+		searchIndex: 'Books',
+		responseGroup: 'EditorialReview,ItemAttributes,ItemIds,Medium,Offers'
+	})
+	.then(ebooks => {
+		res.json({ebooks: ebooks})
+	})
+	.catch(err => {
+		console.error(err);
+		res.status(500).json({message: 'Internal service error'});
+	})
 });
 	
 	//get particular ebook by id

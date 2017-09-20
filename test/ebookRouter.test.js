@@ -231,6 +231,7 @@ describe('EBOOK API RESOURCE', () => {
 				.then(res => {
 					res.should.have.status(200)
 					res.should.be.json
+					res.body.ebooks.should.be.a('array')
 					res.body.ebooks.length.should.be.equal(bookIds.length)
 					res.body.ebooks.forEach((book, index) => {
 						book.id.should.be.equal(bookIds[index].toString())
