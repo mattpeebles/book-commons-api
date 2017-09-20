@@ -23,7 +23,7 @@ wishlistRouter.use(jsonParser)
 	//get all wishlists associated with logged in user
 wishlistRouter.get('/', passport.authenticate('jwt', {session: false}), (req, res) => {
 	return Users
-		.findById(req.user.id)
+		.findById(req.user._id)
 		.exec()
 		.then(user => {
 			let wishlists = user.wishlists
@@ -87,7 +87,7 @@ wishlistRouter.post('/', passport.authenticate('jwt', {session: false}), (req, r
 			 wishlist = list.listRepr()
 
 			return Users
-				.findById(req.user.id)
+				.findById(req.user._id)
 				.exec()
 		})
 		.then(user => {
@@ -100,7 +100,7 @@ wishlistRouter.post('/', passport.authenticate('jwt', {session: false}), (req, r
 
 				//updates logged in user with new wishlist id
 			Users
-				.findByIdAndUpdate(req.user.id, {$set: updateWishlists}, {new: true})
+				.findByIdAndUpdate(req.user._id, {$set: updateWishlists}, {new: true})
 				.exec()
 				.then(user => {
 					res.status(201).json({user: user.userRepr(), wishlist: wishlist})
@@ -207,7 +207,7 @@ wishlistRouter.put('/:listId/delete/:bookId', (req, res) => {
 wishlistRouter.delete('/:listId',  passport.authenticate('jwt', {session: false}), (req, res) => {
 	
 	return Users
-		.findById(req.user.id)
+		.findById(req.user._id)
 		.exec()
 
 	.then(user => {
@@ -218,7 +218,7 @@ wishlistRouter.delete('/:listId',  passport.authenticate('jwt', {session: false}
 	})
 	.then(updateUser => {
 		return Users
-			.findByIdAndUpdate(req.user.id, {$set: updateUser}, {new: true})
+			.findByIdAndUpdate(req.user._id, {$set: updateUser}, {new: true})
 			.exec()
 	})
 	.then(() => {

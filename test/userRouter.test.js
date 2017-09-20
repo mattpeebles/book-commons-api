@@ -97,7 +97,7 @@ describe('USERS API RESOURCE', () => {
 								token = jwt.sign(
 					                {
 					                    user: {
-					                        id: userId,
+					                        _id: userId,
 					                        email,
 					                        wishlists
 					                    }
@@ -346,7 +346,7 @@ describe('USERS API RESOURCE', () => {
 				.then(_res => {
 					res = _res;
 					res.should.have.status(201);
-					res.body.email.should.be.equal(updateUser.email);
+					res.body.user.email.should.be.equal(updateUser.email);
 				})
 		});
 

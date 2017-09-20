@@ -10,6 +10,7 @@ const mongoose = require('mongoose');
 mongoose.Promise = global.Promise;
 
 const {Users, Wishlists} = require('../models');
+const {createAuthToken} = require('./authRouter');
 
 const bodyParser = require('body-parser');
 const jsonParser = bodyParser.json();
@@ -29,7 +30,7 @@ userRouter.use(jsonParser);
 	//return logged in user info
 userRouter.get('/me', passport.authenticate('jwt', {session: false}), (req, res) => {
 		Users
-			.findById(req.user.id)
+			.findById(req.user._id)
 			.exec()
 			.then(user => {
 				return res.json(user.userRepr());
@@ -189,7 +190,10 @@ userRouter.put('/:userId', passport.authenticate('jwt', {session: false}), (req,
 	return Users
 		.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
 		.exec()
-		.then(user => res.status(201).json(user.userRepr()))
+		.then(user => {
+            let authToken = createAuthToken(user)
+            res.status(201).json({user: user.userRepr(), token: authToken})
+        })
 		.catch(err => res.status(500).json({message: 'Internal server error'}))
 })
 

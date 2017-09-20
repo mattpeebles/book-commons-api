@@ -38,7 +38,6 @@ ebookRouter.get('/', (req, res) => {
 
 
 ebookRouter.get('/amazon/:title', (req, res) => {
-	console.log(AMAZON_SECRET)
 	let client = amazon.createClient({
 		  awsId: "AKIAJXDEMJUFMXSLH7PQ",
 		  awsSecret: `${AMAZON_SECRET}`,

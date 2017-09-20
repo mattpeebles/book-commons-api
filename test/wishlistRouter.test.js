@@ -161,7 +161,7 @@ describe('WISHLIST API RESOURCE', () => {
 								token = jwt.sign(
 					                {
 					                    user: {
-					                        id: userId,
+					                        _id: userId,
 					                        email,
 					                        wishlists
 					                    }

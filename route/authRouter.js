@@ -35,4 +35,4 @@ authRouter.post(
     }
 );
 
-module.exports = authRouter;
+module.exports = {authRouter, createAuthToken};

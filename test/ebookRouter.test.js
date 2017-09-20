@@ -133,7 +133,7 @@ describe('EBOOK API RESOURCE', () => {
 								token = jwt.sign(
 					                {
 					                    user: {
-					                        id: userId,
+					                        _id: userId,
 					                        email,
 					                        wishlists
 					                    }
