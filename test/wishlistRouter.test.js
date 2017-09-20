@@ -30,16 +30,16 @@ const {Users, Wishlists, Ebooks} = require('../models');
 
 		function generateEbookData(){
 			return {
-					title: generateTitle(),
-					author: generateAuthor(),
-					preview: generatePreview(),
-					publishDate: generatePublishDate(),
-					languages: generateLanguages(),
-					pages: generatePages(),
-					formats: generateFormats(),
-					location: generateLocation(),
-					locationIcon: generateLocationIcon(),
-					locationUrl: generateLocationUrl()
+				database: 'gutenberg',
+				icon: generateLocationIcon(),
+				title: generateTitle(),
+				author: generateAuthor(),
+				preview: generatePreview(),
+				publishDate: generatePublishDate(),
+				languages: generateLanguages(),
+				pages: generatePages(),
+				formats: generateFormats(),
+				location: generateLocation()
 			}
 		}
 

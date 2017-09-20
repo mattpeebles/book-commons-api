@@ -43,21 +43,23 @@ const bcrypt = require('bcrypt');
 
 //Ebook Set Up
 	const EbookSchema = mongoose.Schema({
+		database: {type: String, required: true},
+		icon: {type: String},
 		title: {type: String, required: true},
 		author: {type: String, required: true},
-		preview: {type: String, required: true},
-		publishDate: {type: String, required: true}, //this may be a date depending on response
-		languages: {type: [String], required: true},
-		pages: {type: Number, required: true},
-		formats: {type: [String], required: true},
-		location: {type: String, required: true},
-		locationIcon: {type: String, required: true},
-		locationUrl: {type: String, required: true}
+		preview: {type: String},
+		publishDate: {type: String}, //this may be a date depending on response
+		languages: {type: [String]},
+		pages: {type: Number},
+		formats: {type: [String]},
+		location: {type: String}
 	});
 
 	EbookSchema.methods.ebookRepr = function(){
 		return {
 			id: this._id,
+			database: this.database,
+			icon: this.icon,
 			title: this.title,
 			author: this.author,
 			preview: this.preview,
@@ -66,8 +68,6 @@ const bcrypt = require('bcrypt');
 			pages: this.pages,
 			formats: this.formats,
 			location: this.location,
-			locationIcon: this.locationIcon,
-			locationUrl: this.locationUrl
 		}
 	};
 //

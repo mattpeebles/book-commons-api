@@ -29,6 +29,8 @@ const {Users, Ebooks, Wishlists} = require('../models');
 
 	function generateEbookData(){
 		return {
+				database: 'gutenberg',
+				icon: generateLocationIcon(),
 				title: generateTitle(),
 				author: generateAuthor(),
 				preview: generatePreview(),
@@ -36,9 +38,7 @@ const {Users, Ebooks, Wishlists} = require('../models');
 				languages: generateLanguages(),
 				pages: generatePages(),
 				formats: generateFormats(),
-				location: generateLocation(),
-				locationIcon: generateLocationIcon(),
-				locationUrl: generateLocationUrl()
+				location: generateLocation()
 		}
 	}
 
@@ -231,6 +231,7 @@ describe('EBOOK API RESOURCE', () => {
 				.then(res => {
 					res.should.have.status(200)
 					res.should.be.json
+					res.body.ebooks.should.be.a('array')
 					res.body.ebooks.length.should.be.equal(bookIds.length)
 					res.body.ebooks.forEach((book, index) => {
 						book.id.should.be.equal(bookIds[index].toString())
@@ -252,16 +253,16 @@ describe('EBOOK API RESOURCE', () => {
 				.then(res => {
 
 					res.should.have.status(201)
-					res.body.title.should.be.equal(ebook.title)
-					res.body.author.should.be.equal(ebook.author)
-					res.body.preview.should.be.equal(ebook.preview)
-					res.body.publishDate.should.be.equal(ebook.publishDate)
-					res.body.languages.should.deep.equal(ebook.languages)
-					res.body.pages.should.be.equal(ebook.pages)
-					res.body.formats.should.deep.equal(ebook.formats)
-					res.body.location.should.be.equal(ebook.location)
-					res.body.locationIcon.should.be.equal(ebook.locationIcon)
-					res.body.locationUrl.should.be.equal(ebook.locationUrl)
+					res.body.ebook.database.should.be.equal(ebook.database)
+					res.body.ebook.icon.should.be.equal(ebook.icon)
+					res.body.ebook.title.should.be.equal(ebook.title)
+					res.body.ebook.author.should.be.equal(ebook.author)
+					res.body.ebook.preview.should.be.equal(ebook.preview)
+					res.body.ebook.publishDate.should.be.equal(ebook.publishDate)
+					res.body.ebook.languages.should.deep.equal(ebook.languages)
+					res.body.ebook.pages.should.be.equal(ebook.pages)
+					res.body.ebook.formats.should.deep.equal(ebook.formats)
+					res.body.ebook.location.should.be.equal(ebook.location)
 				})
 		})
 
@@ -280,6 +281,8 @@ describe('EBOOK API RESOURCE', () => {
 						.then(res => {
 							res.should.have.status(200)
 							res.body.message.should.be.equal('Book exists in database already')
+							res.body.ebook.database.should.be.equal(ebook.database)
+							res.body.ebook.icon.should.be.equal(ebook.icon)
 							res.body.ebook.title.should.be.equal(ebook.title)
 							res.body.ebook.author.should.be.equal(ebook.author)
 							res.body.ebook.preview.should.be.equal(ebook.preview)
@@ -288,8 +291,6 @@ describe('EBOOK API RESOURCE', () => {
 							res.body.ebook.pages.should.be.equal(ebook.pages)
 							res.body.ebook.formats.should.deep.equal(ebook.formats)
 							res.body.ebook.location.should.be.equal(ebook.location)
-							res.body.ebook.locationIcon.should.be.equal(ebook.locationIcon)
-							res.body.ebook.locationUrl.should.be.equal(ebook.locationUrl)
 						})
 				})
 		})

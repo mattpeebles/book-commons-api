@@ -10,6 +10,7 @@
   "author": "Matt Peebles",
   "license": "ISC",
   "dependencies": {
+    "amazon-product-api": "^0.4.4",
     "bcrypt": "^1.0.3",
     "body-parser": "^1.17.2",
     "cookie-parser": "^1.4.3",
