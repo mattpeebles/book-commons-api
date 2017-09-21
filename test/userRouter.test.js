@@ -332,7 +332,9 @@ describe('USERS API RESOURCE', () => {
 
 			let updateUser = {
 				email: 'kendrick@lamar.com',
-				userId: userId
+				userId: userId,
+				currentPassword: password,
+				confirmEmail: 'kendrick@lamar.com'
 			};
 
 				//test
@@ -351,7 +353,9 @@ describe('USERS API RESOURCE', () => {
 		it('should update password', () => {
 			let res;
 			let updateUser = {
+				currentPassword: password,
 				password: 'survive in america', 
+				confirmPassword: 'survive in america',
 				userId: userId
 			}
 				//test
@@ -364,26 +368,7 @@ describe('USERS API RESOURCE', () => {
 					res = _res
 					res.should.have.status(201)
 					res.body.message.should.be.equal('Password changed')
-
-				// 		//prep for test double check
-				// 		//logout user to check that new password can login user
-				// 	return chai.request(app)
-				// 		.get('/users/logout')
 				})
-				// .then(() => {
-
-				// 		//test double check
-				// 		//should log user in with new password
-				// 	return agent.post('/users/login')
-				// 		.send({
-				// 			email: user.email,
-				// 			password: updateUser.password
-				// 		})
-				// 		.then(res => {
-				// 			res.should.have.status(201)
-				// 			res.body.message.should.be.equal('Logged in')
-				// 		})
-				// })
 		});
 	})
 
