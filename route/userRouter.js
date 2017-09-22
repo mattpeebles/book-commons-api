@@ -38,6 +38,30 @@ userRouter.get('/me', passport.authenticate('jwt', {session: false}), (req, res)
 	}
 );
 
+    //adds demo user
+userRouter.post('/demo', (req, res) => {
+    let {email, password} = req.body;
+    return Users.hashPassword(password)
+        .then(hash => {
+            return Users
+                .create({
+                    email,
+                    password: hash,
+                    type: 'demo'
+                })
+        })
+        .then(user => {
+            let newUser = {
+                _id: user._id,
+                email: 'demo@book-commons.com',
+                wishlists: [],
+                type: 'demo'
+            }
+
+            return res.status(201).json(newUser);
+        })
+
+})
 
 	//adds a new user with a non-duplicate email
 userRouter.post('/', (req, res) => {
@@ -109,9 +133,9 @@ userRouter.post('/', (req, res) => {
             code: 422,
             reason: 'ValidationError',
             message: tooSmallField
-                ? `${tooSmallField} must be at least ${sizedFields[tooSmallField]
+                ? `Your ${tooSmallField} must be at least ${sizedFields[tooSmallField]
                       .min} characters`
-                : `${tooLargeField} must be at most ${sizedFields[tooLargeField]
+                : `Your ${tooLargeField} must be at most ${sizedFields[tooLargeField]
                       .max} characters.`,
             location: tooSmallField || tooLargeField
         });
