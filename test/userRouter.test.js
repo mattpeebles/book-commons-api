@@ -175,6 +175,27 @@ describe('USERS API RESOURCE', () => {
 	})
 
 	describe('POST endpoint', () => {
+        it('should post a demo user to database', () => {
+			let newUser = {
+				email: 'grimes@artangel.com',
+				password: 'butterfly',
+				wishlists: []
+			};
+
+			let res;
+
+				//test
+			return chai.request(app)
+				.post('/api/users/demo')
+				.send(newUser)
+				.then(_res => {
+					res = _res;
+					res.should.have.status(201);
+					res.body.email.should.be.equal('demo@book-commons.com');
+					res.body.type.should.be.equal('demo');
+				})
+		});
+
         it('should reject users with missing email', function() {
             return chai.request(app)
                 .post('/api/users')
@@ -265,7 +286,7 @@ describe('USERS API RESOURCE', () => {
                     res.should.have.status(422);
                     res.body.reason.should.be.equal('ValidationError');
                     res.body.message.should.be.equal(
-                        'email must be at least 1 characters'
+                        'Your email must be at least 1 characters'
                     );
                     res.body.location.should.be.equal('email');
                 });
@@ -332,7 +353,9 @@ describe('USERS API RESOURCE', () => {
 
 			let updateUser = {
 				email: 'kendrick@lamar.com',
-				userId: userId
+				userId: userId,
+				currentPassword: password,
+				confirmEmail: 'kendrick@lamar.com'
 			};
 
 				//test
@@ -351,7 +374,9 @@ describe('USERS API RESOURCE', () => {
 		it('should update password', () => {
 			let res;
 			let updateUser = {
+				currentPassword: password,
 				password: 'survive in america', 
+				confirmPassword: 'survive in america',
 				userId: userId
 			}
 				//test
@@ -364,26 +389,7 @@ describe('USERS API RESOURCE', () => {
 					res = _res
 					res.should.have.status(201)
 					res.body.message.should.be.equal('Password changed')
-
-				// 		//prep for test double check
-				// 		//logout user to check that new password can login user
-				// 	return chai.request(app)
-				// 		.get('/users/logout')
 				})
-				// .then(() => {
-
-				// 		//test double check
-				// 		//should log user in with new password
-				// 	return agent.post('/users/login')
-				// 		.send({
-				// 			email: user.email,
-				// 			password: updateUser.password
-				// 		})
-				// 		.then(res => {
-				// 			res.should.have.status(201)
-				// 			res.body.message.should.be.equal('Logged in')
-				// 		})
-				// })
 		});
 	})
 

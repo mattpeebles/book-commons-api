@@ -38,6 +38,30 @@ userRouter.get('/me', passport.authenticate('jwt', {session: false}), (req, res)
 	}
 );
 
+    //adds demo user
+userRouter.post('/demo', (req, res) => {
+    let {email, password} = req.body;
+    return Users.hashPassword(password)
+        .then(hash => {
+            return Users
+                .create({
+                    email,
+                    password: hash,
+                    type: 'demo'
+                })
+        })
+        .then(user => {
+            let newUser = {
+                _id: user._id,
+                email: 'demo@book-commons.com',
+                wishlists: [],
+                type: 'demo'
+            }
+
+            return res.status(201).json(newUser);
+        })
+
+})
 
 	//adds a new user with a non-duplicate email
 userRouter.post('/', (req, res) => {
@@ -109,9 +133,9 @@ userRouter.post('/', (req, res) => {
             code: 422,
             reason: 'ValidationError',
             message: tooSmallField
-                ? `${tooSmallField} must be at least ${sizedFields[tooSmallField]
+                ? `Your ${tooSmallField} must be at least ${sizedFields[tooSmallField]
                       .min} characters`
-                : `${tooLargeField} must be at most ${sizedFields[tooLargeField]
+                : `Your ${tooLargeField} must be at most ${sizedFields[tooLargeField]
                       .max} characters.`,
             location: tooSmallField || tooLargeField
         });
@@ -165,39 +189,78 @@ userRouter.put('/:userId', passport.authenticate('jwt', {session: false}), (req,
 		res.status(400).json({message: message});		
 	}
 
-	const toUpdate = {}
-	const updateableFields = ['email', 'password']
-
-	updateableFields.forEach(field => {
-		if (field in req.body){
-			toUpdate[field] = req.body[field];
-		}
-	})
-
-	if (toUpdate.password !== undefined){
-		let message = (toUpdate.email !== undefined) ? 'Email and password changed' : 'Password changed';
-		return Users.hashPassword(toUpdate.password)
-			.then(hash => {
-				toUpdate['password'] = hash
-				return Users
-					.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
-					.exec()
-					.then(user => {
-                        let authToken = createAuthToken(user)
-                        res.status(201).json({message: message, user: user.userRepr(), token: authToken})
-                    })
-					.catch(err => res.status(500).json({message: 'Internal server error'}))
-			})
-	}
-
-	return Users
-		.findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
-		.exec()
-		.then(user => {
-            let authToken = createAuthToken(user)
-            res.status(201).json({user: user.userRepr(), token: authToken})
+        //ensure password entered is correct
+   Users.findById(req.user._id)
+        .then(_user => {
+            user = _user;
+            return user.validatePassword(req.body.currentPassword);
         })
-		.catch(err => res.status(500).json({message: 'Internal server error'}))
+        .then(isValid => {   
+                //if it isn't reject request
+            if (!isValid) {
+                return res.status(400).json({
+                    message: 'Incorrect password',
+                    reason: 'ValidationError',
+                    location: 'password'
+                });
+            }
+            return isValid
+        })
+        .then(() => {
+                
+                //check to see if email and confirm email match
+            if (req.body.email !== undefined && req.body.email !== req.body.confirmEmail) {
+                return res.status(400).json({
+                    message: 'Email does not match',
+                    reason: 'ValidationError',
+                    location: 'confirmEmail'
+                });
+            }
+                //check to see if newPassword and confirmPassword match
+            if (req.body.password !== undefined && req.body.password !== req.body.confirmPassword) {
+                return res.status(400).json({
+                    message: 'Email does not match',
+                    reason: 'ValidationError',
+                    location: 'confirmEmail'
+                });
+            }
+
+            const toUpdate = {}
+            const updateableFields = ['email', 'password']
+
+            updateableFields.forEach(field => {
+                if (field in req.body){
+                    toUpdate[field] = req.body[field];
+                }
+            })
+
+                //hashes password if password exists in request
+            if (toUpdate.password !== undefined){
+                let message = (toUpdate.email !== undefined) ? 'Email and password changed' : 'Password changed';
+                return Users.hashPassword(toUpdate.password)
+                    .then(hash => {
+                        toUpdate['password'] = hash
+                        return Users
+                            .findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+                            .exec()
+                            .then(user => {
+                                let authToken = createAuthToken(user)
+                                res.status(201).json({message: message, user: user.userRepr(), token: authToken})
+                            })
+                            .catch(err => res.status(500).json({message: 'Internal server error'}))
+                    })
+            }
+
+                //doesn't need to hash password so immediately updates user
+            return Users
+                .findByIdAndUpdate(req.params.userId, {$set: toUpdate}, {new: true})
+                .exec()
+                .then(user => {
+                    let authToken = createAuthToken(user)
+                    res.status(201).json({user: user.userRepr(), token: authToken})
+                })
+                .catch(err => res.status(500).json({message: 'Internal server error'}))
+        })
 })
 
 	//authorize
