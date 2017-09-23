@@ -14,7 +14,8 @@ const bcrypt = require('bcrypt');
 		return {
 			id: this._id,
 			email: this.email,
-			wishlists: this.wishlists
+			wishlists: this.wishlists,
+			type: this.type
 		}
 	};
 
