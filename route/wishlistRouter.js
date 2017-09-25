@@ -103,6 +103,7 @@ wishlistRouter.post('/', passport.authenticate('jwt', {session: false}), (req, r
 				.findByIdAndUpdate(req.user._id, {$set: updateWishlists}, {new: true})
 				.exec()
 				.then(user => {
+					console.log(user)
 					res.status(201).json({user: user.userRepr(), wishlist: wishlist})
 				})
 		})
